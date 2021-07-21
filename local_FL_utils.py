@@ -9,6 +9,7 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.metrics import accuracy_score
+import copy
 
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -41,6 +42,19 @@ def load(paths, verbose=-1):
     return data, labels
 
 
+def splitByLabel(data, labels):
+    dico = {}
+    for i in range(len(labels)):
+        if labels[i] not in dico.keys():
+            dico[labels[i]] = [data[i]]
+        else:
+            dico[labels[i]].append(data[i])
+    for key in dico.keys():
+        random.shuffle(dico[key])
+    return dico
+
+
+
 def create_clients(image_list, label_list, num_clients=10, initial='client'):
     ''' return: a dictionary with keys clients' names and value as
                 data shards - tuple of images and label lists.
@@ -53,6 +67,7 @@ def create_clients(image_list, label_list, num_clients=10, initial='client'):
     '''
 
     # create a list of client names
+    print(label_list)
     client_names = ['{}_{}'.format(initial, i + 1) for i in range(num_clients)]
 
     # randomize the data
@@ -163,7 +178,6 @@ def non_iid_x(image_list, label_list, x=1, num_intraclass_clients=10):
 
     # create sub label lists based on x
     sub_lab_list = [unique_labels[i:i + x] for i in range(0, len(unique_labels), x)]
-    print(sub_lab_list)
 
     for item in sub_lab_list:
         class_data = [(image, label) for (image, label) in zip(image_list, label_list) if label in item]
@@ -174,8 +188,7 @@ def non_iid_x(image_list, label_list, x=1, num_intraclass_clients=10):
         # create formated client initials
         initial = ''
         for lab in item:
-            initial = initial + str(lab) + '_'
-            print(initial)
+            initial = initial + lab + '_'
 
         # create num_intraclass_clients clients from the class
         intraclass_clients = create_clients(list(images), list(labels), num_intraclass_clients, initial)
@@ -184,3 +197,98 @@ def non_iid_x(image_list, label_list, x=1, num_intraclass_clients=10):
         non_iid_x_clients.update(intraclass_clients)
 
     return non_iid_x_clients
+
+
+def biggerLabel(label1, label2):
+    for i in range(len(label1)):
+        if label1[i] == 1 and label2[i] == 0:
+            return True
+        elif label2[i] == 1:
+            return False
+
+
+def mergeSort(arr):
+    if len(arr) > 1:
+
+        # Finding the mid of the array
+        mid = len(arr) // 2
+
+        # Dividing the array elements
+        L = arr[:mid]
+
+        # into 2 halves
+        R = arr[mid:]
+
+        # Sorting the first half
+        mergeSort(L)
+
+        # Sorting the second half
+        mergeSort(R)
+
+        i = j = k = 0
+
+        # Copy data to temp arrays L[] and R[]
+        while i < len(L) and j < len(R):
+            if biggerLabel(L[i][1], R[j][1]):
+                arr[k] = L[i]
+                i += 1
+            else:
+                arr[k] = R[j]
+                j += 1
+            k += 1
+
+        # Checking if any element was left
+        while i < len(L):
+            arr[k] = L[i]
+            i += 1
+            k += 1
+
+        while j < len(R):
+            arr[k] = R[j]
+            j += 1
+            k += 1
+
+
+def create_clients_non_iid(image_list, label_list, num_clients=100, initial='client', num_classes= 2):
+    ''' return: a dictionary with keys clients' names and value as
+                data shards - tuple of images and label lists.
+        args:
+            image_list: a list of numpy arrays of training images
+            label_list:a list of binarized labels for each image
+            num_client: number of federated members (clients)
+            initials: the clients'name prefix, e.g, clients_1
+
+    '''
+
+    # create a list of client names
+    client_names = []
+    for i in range(num_clients*num_classes):
+        client_names.append('{}_{}_{}'.format(initial, i // num_classes, i % num_classes))
+
+    # randomize the data
+    data = list(zip(image_list, label_list))
+    random.shuffle(data)
+
+    # Later for cross validation
+    '''
+    # Divide the data into 5 folds sorted by labels
+    datalist = []
+    size = len(data)
+    for i in range(5):
+        temp_data = (data[i:int(i+(size/5))])
+        mergeSort(temp_data)
+        datalist.append(temp_data)
+    # print(datalist[4][5000][1])
+    '''
+
+    # Sort the data by labels
+    mergeSort(data)
+
+    # shard data and place at each client
+    size = len(data) // (num_clients*num_classes) # 37800 // 100*2 = 189
+    shards = [data[i:i + size] for i in range(0, size * num_clients * num_classes, size)]
+
+    # number of clients must equal number of shards
+    assert (len(shards) == len(client_names))
+
+    return {client_names[i]: shards[i] for i in range(len(client_names))}

@@ -33,6 +33,7 @@ image_list, label_list = FL_utils.load(image_paths, verbose=10000)
 # print(image_list[0])
 # print(label_list)
 
+
 #binarize the labels
 lb = LabelBinarizer()
 label_list = lb.fit_transform(label_list)
@@ -46,8 +47,7 @@ X_train, X_test, y_train, y_test = train_test_split(image_list,
 
 
 
-
-clients = FL_utils.non_iid_x(X_train, y_train, 1, 10)
+clients = FL_utils.create_clients_non_iid(X_train, y_train)
 
 print(clients.keys())
 
