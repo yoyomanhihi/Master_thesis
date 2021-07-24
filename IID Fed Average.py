@@ -21,104 +21,114 @@ from tensorflow.keras import backend as K
 import local_FL_utils as FL_utils
 
 
-#declear path to your mnist data folder
-img_path = 'trainingSet/trainingSet'
+def FedAvg(frac, bs, epo, lr, comms_round):
+    ''' args:
+            frac: fraction of clients selected at each round
+            bs: local mini-batch size
+            epo: number of local epochs
+            lr: learning rate
+            lrd: learning rate decay
+    '''
 
-#get the path list using the path object
-image_paths = list(paths.list_images(img_path))
+    #declear path to your mnist data folder
+    img_path = 'trainingSet/trainingSet'
 
-#apply our function
-image_list, label_list = FL_utils.load(image_paths, verbose=10000)
-# print(image_list[0])
-# print(label_list)
+    #get the path list using the path object
+    image_paths = list(paths.list_images(img_path))
 
-#binarize the labels
-lb = LabelBinarizer()
-label_list = lb.fit_transform(label_list)
-# print(label_list)
+    #apply our function
+    image_list, label_list = FL_utils.load(image_paths, verbose=10000)
+    # print(image_list[0])
+    # print(label_list)
 
-#split data into training and test set
-X_train, X_test, y_train, y_test = train_test_split(image_list,
-                                                    label_list,
-                                                    test_size=0.1,
-                                                    random_state=42)
+    #binarize the labels
+    lb = LabelBinarizer()
+    label_list = lb.fit_transform(label_list)
+    # print(label_list)
 
-
-
-#create clients
-clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
-# print(clients["client_3"])
-# print(type(clients["client_3"]))
-# print(clients["client_3"][1])
-
-
-
-# process and batch the training data for each client
-clients_batched = dict()
-for (client_name, data) in clients.items():
-    clients_batched[client_name] = FL_utils.batch_data(data)
-
-# process and batch the test set
-test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
+    #split data into training and test set
+    X_train, X_test, y_train, y_test = train_test_split(image_list,
+                                                        label_list,
+                                                        test_size=0.1,
+                                                        random_state=42)
 
 
 
-lr = 0.01
-comms_round = 100
-loss='categorical_crossentropy'
-metrics = ['accuracy']
-optimizer = SGD(lr=lr,
-                decay=lr / comms_round,
-                momentum=0.9
-               )
+    #create clients
+    clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
+    # print(clients["client_3"])
+    # print(type(clients["client_3"]))
+    # print(clients["client_3"][1])
 
 
 
-# initialize global model
-smlp_global = FL_utils.SimpleMLP()
-global_model = smlp_global.build(784, 10)
+    # process and batch the training data for each client
+    clients_batched = dict()
+    for (client_name, data) in clients.items():
+        clients_batched[client_name] = FL_utils.batch_data(data, bs = bs)
 
-# commence global training loop
-for comm_round in range(comms_round):
+    # process and batch the test set
+    test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
 
-    # get the global model's weights - will serve as the initial weights for all local models
-    global_weights = global_model.get_weights()
 
-    # initial list to collect local model weights after scalling
-    scaled_local_weight_list = list()
 
-    # randomize client data - using keys
-    client_names = list(clients_batched.keys())
-    random.shuffle(client_names)
+    loss='categorical_crossentropy'
+    metrics = ['accuracy']
+    optimizer = SGD(lr=lr,
+                    decay=lr / comms_round,
+                    momentum=0.9
+                   )
 
-    # loop through each client and create new local model
-    for client in client_names:
-        smlp_local = FL_utils.SimpleMLP()
-        local_model = smlp_local.build(784, 10)
-        local_model.compile(loss=loss,
-                            optimizer=optimizer,
-                            metrics=metrics)
 
-        # set local model weight to the weight of the global model
-        local_model.set_weights(global_weights)
 
-        # fit local model with client's data
-        local_model.fit(clients_batched[client], epochs=1, verbose=0)
+    # initialize global model
+    smlp_global = FL_utils.SimpleMLP()
+    global_model = smlp_global.build(784, 10)
 
-        # scale the model weights and add to list
-        scaling_factor = FL_utils.weight_scalling_factor(clients_batched, client)
-        scaled_weights = FL_utils.scale_model_weights(local_model.get_weights(), scaling_factor)
-        scaled_local_weight_list.append(scaled_weights)
+    # commence global training loop
+    for comm_round in range(comms_round):
 
-        # clear session to free memory after each communication round
-        K.clear_session()
+        # get the global model's weights - will serve as the initial weights for all local models
+        global_weights = global_model.get_weights()
 
-    # to get the average over all the local model, we simply take the sum of the scaled weights
-    average_weights = FL_utils.sum_scaled_weights(scaled_local_weight_list)
+        # initial list to collect local model weights after scalling
+        scaled_local_weight_list = list()
 
-    # update global model
-    global_model.set_weights(average_weights)
+        # randomize client data - using keys
+        client_names = list(clients_batched.keys())
+        random.shuffle(client_names)
 
-    # test global model and print out metrics after each communications round
-    for (X_test, Y_test) in test_batched:
-        global_acc, global_loss = FL_utils.test_model(X_test, Y_test, global_model, comm_round)
+        # loop through each client and create new local model
+        nbrclients = int(frac * len(client_names))
+        for client in client_names[:nbrclients]:
+            smlp_local = FL_utils.SimpleMLP()
+            local_model = smlp_local.build(784, 10)
+            local_model.compile(loss=loss,
+                                optimizer=optimizer,
+                                metrics=metrics)
+
+            # set local model weight to the weight of the global model
+            local_model.set_weights(global_weights)
+
+            # fit local model with client's data
+            local_model.fit(clients_batched[client], epochs=epo, verbose=0)
+
+            # scale the model weights and add to list
+            scaling_factor = FL_utils.weight_scalling_factor(clients_batched, client)
+            scaled_weights = FL_utils.scale_model_weights(local_model.get_weights(), scaling_factor)
+            scaled_local_weight_list.append(scaled_weights)
+
+            # clear session to free memory after each communication round
+            K.clear_session()
+
+        # to get the average over all the local model, we simply take the sum of the scaled weights
+        average_weights = FL_utils.sum_scaled_weights(scaled_local_weight_list)
+
+        # update global model
+        global_model.set_weights(average_weights)
+
+        # test global model and print out metrics after each communications round
+        for (X_test, Y_test) in test_batched:
+            global_acc, global_loss = FL_utils.test_model(X_test, Y_test, global_model, comm_round)
+
+FedAvg(1, 32, 1, 0.01, 100)

@@ -85,7 +85,7 @@ def FedAvg(frac, bs, epo, lr, comms_round):
 
         # loop through each client and create new local model
         nbrclients = int(frac * len(client_names))
-        for client in client_names[:nbrclients]: #TO FIX: clients 1_0 and 1_1 treated as two different clients
+        for client in client_names[:nbrclients]:
             smlp_local = FL_utils.SimpleMLP()
             local_model = smlp_local.build(784, 10)
             local_model.compile(loss=loss,

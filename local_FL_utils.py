@@ -260,14 +260,9 @@ def create_clients_non_iid(image_list, label_list, num_clients=100, initial='cli
 
     '''
 
-    # create a list of client names
-    client_names = []
-    for i in range(num_clients*num_classes):
-        client_names.append('{}_{}_{}'.format(initial, i // num_classes, i % num_classes))
-
-    # randomize the data
+    # Sort the data by labels
     data = list(zip(image_list, label_list))
-    random.shuffle(data)
+    mergeSort(data)
 
     # Later for cross validation
     '''
@@ -281,14 +276,23 @@ def create_clients_non_iid(image_list, label_list, num_clients=100, initial='cli
     # print(datalist[4][5000][1])
     '''
 
-    # Sort the data by labels
-    mergeSort(data)
 
-    # shard data and place at each client
+    # shard data and randomize it
     size = len(data) // (num_clients*num_classes) # 37800 // 100*2 = 189
     shards = [data[i:i + size] for i in range(0, size * num_clients * num_classes, size)]
+    random.shuffle(shards)
 
     # number of clients must equal number of shards
-    assert (len(shards) == len(client_names))
+    assert (len(shards) == num_clients*num_classes)
 
-    return {client_names[i]: shards[i] for i in range(len(client_names))}
+    #Give shards to clients
+    clients = {}
+    for i in range(len(shards)):
+        clientnbr = i // num_classes
+        clientname = '{}_{}'.format(initial, clientnbr)
+        if clientnbr not in clients:
+            clients[clientname] = shards[i]
+        else:
+            clients[clientname].extend(shards[i])
+
+    return clients
