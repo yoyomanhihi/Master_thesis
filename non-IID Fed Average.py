@@ -21,7 +21,7 @@ from tensorflow.keras import backend as K
 import local_FL_utils as FL_utils
 
 
-def FedAvg(frac, bs, epo, lr, comms_round):
+def fedAvg(frac, bs, epo, lr, comms_round):
     ''' args:
             frac: fraction of clients selected at each round
             bs: local mini-batch size
@@ -29,29 +29,10 @@ def FedAvg(frac, bs, epo, lr, comms_round):
             lr: learning rate
             lrd: learning rate decay
     '''
-    # declear path to your mnist data folder
-    img_path = 'trainingSet/trainingSet'
 
-    # get the path list using the path object
-    image_paths = list(paths.list_images(img_path))
+    X_train, X_test, y_train, y_test = FL_utils.prepareData('trainingSet/trainingSet')
 
-    # apply our function
-    image_list, label_list = FL_utils.load(image_paths, verbose=10000)
-    # print(image_list[0])
-    # print(label_list)
-
-    # binarize the labels
-    lb = LabelBinarizer()
-    label_list = lb.fit_transform(label_list)
-    # print(label_list)
-
-    # split data into training and test set
-    X_train, X_test, y_train, y_test = train_test_split(image_list,
-                                                        label_list,
-                                                        test_size=0.1,
-                                                        random_state=42)
-
-    clients = FL_utils.create_clients_non_iid(X_train, y_train)
+    clients = FL_utils.create_clients_non_iid(X_train, y_train, num_classes=10)
 
     clients_batched = dict()
     for (client_name, data) in clients.items():
@@ -117,4 +98,4 @@ def FedAvg(frac, bs, epo, lr, comms_round):
             global_acc, global_loss = FL_utils.test_model(X_test, Y_test, global_model, comm_round)
 
 
-FedAvg(1, 32, 1, 0.01, 100)
+fedAvg(1, 32, 1, 0.01, 100)

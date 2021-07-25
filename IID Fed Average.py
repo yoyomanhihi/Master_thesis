@@ -21,7 +21,7 @@ from tensorflow.keras import backend as K
 import local_FL_utils as FL_utils
 
 
-def FedAvg(frac, bs, epo, lr, comms_round):
+def fedAvg(frac, bs, epo, lr, comms_round):
     ''' args:
             frac: fraction of clients selected at each round
             bs: local mini-batch size
@@ -30,37 +30,10 @@ def FedAvg(frac, bs, epo, lr, comms_round):
             lrd: learning rate decay
     '''
 
-    #declear path to your mnist data folder
-    img_path = 'trainingSet/trainingSet'
+    X_train, X_test, y_train, y_test = FL_utils.prepareData('trainingSet/trainingSet')
 
-    #get the path list using the path object
-    image_paths = list(paths.list_images(img_path))
-
-    #apply our function
-    image_list, label_list = FL_utils.load(image_paths, verbose=10000)
-    # print(image_list[0])
-    # print(label_list)
-
-    #binarize the labels
-    lb = LabelBinarizer()
-    label_list = lb.fit_transform(label_list)
-    # print(label_list)
-
-    #split data into training and test set
-    X_train, X_test, y_train, y_test = train_test_split(image_list,
-                                                        label_list,
-                                                        test_size=0.1,
-                                                        random_state=42)
-
-
-
-    #create clients
+    # create clients
     clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
-    # print(clients["client_3"])
-    # print(type(clients["client_3"]))
-    # print(clients["client_3"][1])
-
-
 
     # process and batch the training data for each client
     clients_batched = dict()
@@ -71,14 +44,12 @@ def FedAvg(frac, bs, epo, lr, comms_round):
     test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
 
 
-
     loss='categorical_crossentropy'
     metrics = ['accuracy']
     optimizer = SGD(lr=lr,
                     decay=lr / comms_round,
                     momentum=0.9
                    )
-
 
 
     # initialize global model
@@ -131,4 +102,4 @@ def FedAvg(frac, bs, epo, lr, comms_round):
         for (X_test, Y_test) in test_batched:
             global_acc, global_loss = FL_utils.test_model(X_test, Y_test, global_model, comm_round)
 
-FedAvg(1, 32, 1, 0.01, 100)
+fedAvg(1, 32, 1, 0.05, 100)
