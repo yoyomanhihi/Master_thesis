@@ -85,7 +85,7 @@ def fedAvg(frac, bs, epo, lr, comms_round):
             local_model.fit(clients_batched[client], epochs=epo, verbose=0)
 
             # scale the model weights and add to list
-            scaling_factor = FL_utils.weight_scalling_factor(clients_batched, client)
+            scaling_factor = FL_utils.weight_scalling_factor(clients_batched, client, frac)
             scaled_weights = FL_utils.scale_model_weights(local_model.get_weights(), scaling_factor)
             scaled_local_weight_list.append(scaled_weights)
 
@@ -102,4 +102,4 @@ def fedAvg(frac, bs, epo, lr, comms_round):
         for (X_test, Y_test) in test_batched:
             global_acc, global_loss = FL_utils.test_model(X_test, Y_test, global_model, comm_round)
 
-fedAvg(1, 32, 1, 0.05, 100)
+fedAvg(1/2, 32, 1, 0.01, 100)

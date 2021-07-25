@@ -119,6 +119,42 @@ def create_clients(image_list, label_list, num_clients=10, initial='client'):
     return {client_names[i]: shards[i] for i in range(len(client_names))}
 
 
+def create_clients_non_iid(image_list, label_list, num_clients=100, initial='client', num_classes= 2):
+    ''' return: a dictionary with keys clients' names and value as
+                data shards - tuple of images and label lists.
+        args:
+            image_list: a list of numpy arrays of training images
+            label_list:a list of binarized labels for each image
+            num_client: number of federated members (clients)
+            initials: the clients'name prefix, e.g, clients_1
+
+    '''
+
+    # Sort the data by labels
+    data = list(zip(image_list, label_list))
+    mergeSort(data)
+
+    # shard data and randomize it
+    size = len(data) // (num_clients*num_classes) # 37800 // 100*2 = 189
+    shards = [data[i:i + size] for i in range(0, size * num_clients * num_classes, size)]
+    random.shuffle(shards)
+
+    # number of clients must equal number of shards
+    assert (len(shards) == num_clients*num_classes)
+
+    #Give shards to clients
+    clients = {}
+    for i in range(len(shards)):
+        clientnbr = i // num_classes
+        clientname = '{}_{}'.format(initial, clientnbr)
+        if clientname not in clients:
+            clients[clientname] = shards[i]
+        else:
+            clients[clientname].extend(shards[i])
+
+    return clients
+
+
 def batch_data(data_shard, bs=32):
     ''' Takes in a clients data shard and create a tfds object off it
         args:
@@ -145,7 +181,7 @@ class SimpleMLP:
         return model
 
 
-def weight_scalling_factor(clients_trn_data, client_name):
+def weight_scalling_factor(clients_trn_data, client_name, frac):
     ''' Calculates the proportion of a client’s local training data with the overall training data held by all clients
         args:
             clients_trn_data: dictionary of training data by client
@@ -159,7 +195,7 @@ def weight_scalling_factor(clients_trn_data, client_name):
         [tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() for client_name in client_names]) * bs
     # get the total number of data points held by a client
     local_count = tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() * bs
-    return local_count / global_count
+    return (local_count / global_count) / frac
 
 
 def scale_model_weights(weight, scalar):
@@ -256,52 +292,3 @@ def mergeSort(arr):
             arr[k] = R[j]
             j += 1
             k += 1
-
-
-def create_clients_non_iid(image_list, label_list, num_clients=100, initial='client', num_classes= 2):
-    ''' return: a dictionary with keys clients' names and value as
-                data shards - tuple of images and label lists.
-        args:
-            image_list: a list of numpy arrays of training images
-            label_list:a list of binarized labels for each image
-            num_client: number of federated members (clients)
-            initials: the clients'name prefix, e.g, clients_1
-
-    '''
-
-    # Sort the data by labels
-    data = list(zip(image_list, label_list))
-    mergeSort(data)
-
-    # Later for cross validation
-    '''
-    # Divide the data into 5 folds sorted by labels
-    datalist = []
-    size = len(data)
-    for i in range(5):
-        temp_data = (data[i:int(i+(size/5))])
-        mergeSort(temp_data)
-        datalist.append(temp_data)
-    # print(datalist[4][5000][1])
-    '''
-
-
-    # shard data and randomize it
-    size = len(data) // (num_clients*num_classes) # 37800 // 100*2 = 189
-    shards = [data[i:i + size] for i in range(0, size * num_clients * num_classes, size)]
-    random.shuffle(shards)
-
-    # number of clients must equal number of shards
-    assert (len(shards) == num_clients*num_classes)
-
-    #Give shards to clients
-    clients = {}
-    for i in range(len(shards)):
-        clientnbr = i // num_classes
-        clientname = '{}_{}'.format(initial, clientnbr)
-        if clientname not in clients:
-            clients[clientname] = shards[i]
-        else:
-            clients[clientname].extend(shards[i])
-
-    return clients
