@@ -42,7 +42,7 @@ def load(paths, verbose=-1):
     return data, labels
 
 
-def prepareData(path):
+def prepareTrainTest(path):
     ''' return:
             X_train: training set data
             X_test: test set data
@@ -75,6 +75,39 @@ def prepareData(path):
                                                         random_state=42)
 
     return X_train, X_test, y_train, y_test
+
+
+def prepareAllData(path):
+    ''' return:
+            X_train: training set data
+            X_test: test set data
+            y_train: training set labels
+            y_test: test set labels
+        args:
+            path: filepath to the data
+    '''
+
+    # declear path to your mnist data folder
+    img_path = path
+
+    # get the path list using the path object
+    image_paths = list(paths.list_images(img_path))
+
+    # apply our function
+    image_list, label_list = load(image_paths, verbose=10000)
+    image_list = np.array(image_list)
+    # print(image_list[0])
+    # print(label_list)
+
+    # binarize the labels
+    lb = LabelBinarizer()
+    label_list = lb.fit_transform(label_list)
+    # print(label_list)
+
+    # Shuffle data and labels the same way
+    p = np.random.permutation(len(label_list))
+    return image_list[p], label_list[p]
+
 
 
 def splitByLabel(data, labels):
@@ -292,3 +325,88 @@ def mergeSort(arr):
             arr[k] = R[j]
             j += 1
             k += 1
+
+
+def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
+    ''' federated averaging algorithm
+            args:
+                clients: dictionary of the clients and their data
+                X_test: test set data
+                y_test: test set labels
+                frac: fraction of clients selected at each round
+                bs: local mini-batch size
+                epo: number of local epochs
+                lr: learning rate
+                comms_round: number of global communication round
+            returns:
+                global_acc: the global accuracy after comms_round rounds
+    '''
+
+    # process and batch the training data for each client
+    clients_batched = dict()
+    for (client_name, data) in clients.items():
+        clients_batched[client_name] = batch_data(data, bs = bs)
+
+    # process and batch the test set
+    test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
+
+
+    loss='categorical_crossentropy'
+    metrics = ['accuracy']
+    optimizer = SGD(lr=lr,
+                    decay=lr / comms_round,
+                    momentum=0.9
+                   )
+
+
+    # initialize global model
+    smlp_global = SimpleMLP()
+    global_model = smlp_global.build(784, 10)
+
+    # commence global training loop
+    for comm_round in range(comms_round):
+
+        # get the global model's weights - will serve as the initial weights for all local models
+        global_weights = global_model.get_weights()
+
+        # initial list to collect local model weights after scalling
+        scaled_local_weight_list = list()
+
+        # randomize client data - using keys
+        client_names = list(clients_batched.keys())
+        random.shuffle(client_names)
+
+        # loop through each client and create new local model
+        nbrclients = int(frac * len(client_names))
+        for client in client_names[:nbrclients]:
+            smlp_local = SimpleMLP()
+            local_model = smlp_local.build(784, 10)
+            local_model.compile(loss=loss,
+                                optimizer=optimizer,
+                                metrics=metrics)
+
+            # set local model weight to the weight of the global model
+            local_model.set_weights(global_weights)
+
+            # fit local model with client's data
+            local_model.fit(clients_batched[client], epochs=epo, verbose=0)
+
+            # scale the model weights and add to list
+            scaling_factor = weight_scalling_factor(clients_batched, client, frac)
+            scaled_weights = scale_model_weights(local_model.get_weights(), scaling_factor)
+            scaled_local_weight_list.append(scaled_weights)
+
+            # clear session to free memory after each communication round
+            K.clear_session()
+
+        # to get the average over all the local model, we simply take the sum of the scaled weights
+        average_weights = sum_scaled_weights(scaled_local_weight_list)
+
+        # update global model
+        global_model.set_weights(average_weights)
+
+        # test global model and print out metrics after each communications round
+        for (X_test, Y_test) in test_batched:
+            global_acc, global_loss = test_model(X_test, Y_test, global_model, comm_round)
+
+    return global_acc
