@@ -1,4 +1,23 @@
 import numpy as np
+import random
+import cv2
+import os
+from imutils import paths
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+from sklearn.metrics import accuracy_score
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import MaxPooling2D
+from tensorflow.keras.layers import Activation
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras import backend as K
 import local_FL_utils as FL_utils
 
 
@@ -62,4 +81,4 @@ def cross_val_fedAvg(splitter = 10, frac = 1, bs = 32, epo = 1, lr = 0.01, comms
         total_accuracy += local_accuracy
     return total_accuracy / splitter
 
-cross_val_fedAvg(5)
+print(cross_val_fedAvg(10))

@@ -1,41 +1,4 @@
-
-import numpy as np
-import pandas as pd
-from sklearn import tree
-from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier
-import random
-import math
-from matplotlib import pyplot
-from numpy import mean
-from numpy import std
-from matplotlib import pyplot
-from sklearn.model_selection import KFold
-from keras.datasets import mnist
-from keras.utils import to_categorical
-from keras.models import Sequential
-from keras.layers import Conv2D
-from keras.layers import MaxPooling2D
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.optimizers import SGD
-
-import torch
-import math
-import torch.nn.functional as F
-from torch import nn
-from torch import optim
-import torchvision
-import torchvision.transforms as transforms
-from torch.utils.data import TensorDataset
-from torch.utils.data import DataLoader
-
-from pathlib import Path
-import requests
-import pickle
-import gzip
-
-import math
+import "IID Fed Average.py" as iid_fedAvg
 
 pd.options.display.float_format = "{:,.4f}".format
 
