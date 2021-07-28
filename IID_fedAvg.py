@@ -41,7 +41,7 @@ def simpleFedAvgTest(frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
     FL_utils.fedAvg(clients, X_test, y_test, frac = frac, bs = bs, epo = epo, lr = lr, comms_round = comms_round)
 
 
-def cross_val_fedAvg(splitter = 10, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
+def cross_val_fedAvg(splitter = 5, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
     """ Make a splitter-fold cross-validation non-IID federated averaging test
             args:
                 splitter: the number of folds for the cross-validation
@@ -80,5 +80,3 @@ def cross_val_fedAvg(splitter = 10, frac = 1, bs = 32, epo = 1, lr = 0.01, comms
         local_accuracy = FL_utils.fedAvg(clients, X_test, y_test, frac = frac, bs = bs, epo = epo, lr = lr, comms_round = comms_round)
         total_accuracy += local_accuracy
     return total_accuracy / splitter
-
-print(cross_val_fedAvg(10))
