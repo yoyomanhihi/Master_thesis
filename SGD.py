@@ -22,71 +22,39 @@ from tensorflow.keras import backend as K
 import local_FL_utils as FL_utils
 
 
+def simpleSGDTest():
 
-#declear path to your mnist data folder
-img_path = 'trainingSet/trainingSet'
+    X_train, X_test, y_train, y_test = FL_utils.prepareTrainTest('trainingSet/trainingSet')
 
-#get the path list using the path object
-image_paths = list(paths.list_images(img_path))
-
-#apply our function
-image_list, label_list = FL_utils.load(image_paths, verbose=10000)
-# print(image_list[0])
-# print(label_list)
-
-#binarize the labels
-lb = LabelBinarizer()
-label_list = lb.fit_transform(label_list)
-# print(label_list)
-
-#split data into training and test set
-X_train, X_test, y_train, y_test = train_test_split(image_list,
-                                                    label_list,
-                                                    test_size=0.1,
-                                                    random_state=42)
+    return FL_utils.simpleSGD(X_train, y_train, X_test, y_test)
 
 
 
-#create clients
-clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
-# print(clients["client_3"])
-# print(type(clients["client_3"]))
-# print(clients["client_3"][1])
+def cross_val_SGD(splitter = 5):
 
+    image_list, label_list = FL_utils.prepareAllData('trainingSet/trainingSet')
+    size = len(label_list)
+    total_accuracy = 0
 
+    for i in range(splitter):
+        split = int(size / splitter)
+        spliti = int(i * (size / splitter))
+        X_train1 = image_list[0:spliti]  # 0:61
+        y_train1 = label_list[0:spliti]  # 0:61
+        print("train 1: " + str(0) + " à " + str(spliti))
 
-# process and batch the training data for each client
-clients_batched = dict()
-for (client_name, data) in clients.items():
-    clients_batched[client_name] = FL_utils.batch_data(data)
+        X_test = image_list[spliti:spliti + split]  # 61:122
+        y_test = label_list[spliti:spliti + split]  # 61:122
+        print("test: " + str(spliti) + " à " + str(spliti + split))
+        X_train2 = image_list[spliti + split:]
+        y_train2 = label_list[spliti + split:]
+        print("train 2: " + str(spliti + split) + " à " + "la fin")
 
-# process and batch the test set
-test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
+        X_train = np.append(X_train1, X_train2, axis=0)
+        y_train = np.append(y_train1, y_train2, axis=0)
 
+        clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
 
-
-lr = 0.01
-comms_round = 100
-loss='categorical_crossentropy'
-metrics = ['accuracy']
-optimizer = SGD(lr=lr,
-                decay=lr / comms_round,
-                momentum=0.9
-               )
-
-
-
-SGD_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(len(y_train)).batch(320)
-smlp_SGD = FL_utils.SimpleMLP()
-SGD_model = smlp_SGD.build(784, 10)
-
-SGD_model.compile(loss=loss,
-              optimizer=optimizer,
-              metrics=metrics)
-
-# fit the SGD training data to model
-_ = SGD_model.fit(SGD_dataset, epochs=100, verbose=0)
-
-#test the SGD global model and print out metrics
-for(X_test, Y_test) in test_batched:
-        SGD_acc, SGD_loss = FL_utils.test_model(X_test, Y_test, SGD_model, 1)
+        local_accuracy = FL_utils.simpleSGD(clients, X_test, y_test)
+        total_accuracy += local_accuracy
+    return total_accuracy / splitter

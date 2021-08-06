@@ -71,7 +71,7 @@ def prepareTrainTest(path):
     # split data into training and test set
     X_train, X_test, y_train, y_test = train_test_split(image_list,
                                                         label_list,
-                                                        test_size=0.1,
+                                                        test_size=0.2,
                                                         random_state=42)
 
     return X_train, X_test, y_train, y_test
@@ -134,8 +134,6 @@ def create_clients(image_list, label_list, num_clients=10, initial='client'):
 
     '''
 
-    # create a list of client names
-    print(label_list)
     client_names = ['{}_{}'.format(initial, i + 1) for i in range(num_clients)]
 
     # randomize the data
@@ -325,6 +323,44 @@ def mergeSort(arr):
             arr[k] = R[j]
             j += 1
             k += 1
+
+
+
+def simpleSGD(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100):
+    ''' Simple SGD algorithm
+            args:
+                clients: dictionary of the clients and their data
+                X_test: test set data
+                y_test: test set labels
+            returns:
+                SGD_acc: the global accuracy after comms_round rounds
+    '''
+
+    test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
+
+    loss = 'categorical_crossentropy'
+    metrics = ['accuracy']
+    optimizer = SGD(lr=lr,
+                    decay=lr / comms_round,
+                    momentum=0.9
+                    )
+
+    SGD_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(len(y_train)).batch(320)
+    smlp_SGD = SimpleMLP()
+    SGD_model = smlp_SGD.build(784, 10)
+
+    SGD_model.compile(loss=loss,
+                  optimizer=optimizer,
+                  metrics=metrics)
+
+    # fit the SGD training data to model
+    _ = SGD_model.fit(SGD_dataset, epochs=100, verbose=0)
+
+    #test the SGD global model and print out metrics
+    for(X_test, Y_test) in test_batched:
+            SGD_acc, SGD_loss = test_model(X_test, Y_test, SGD_model, 1)
+
+    return SGD_acc
 
 
 def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):

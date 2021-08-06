@@ -38,7 +38,7 @@ def simpleFedAvgTest(frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
 
     # create clients
     clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
-    FL_utils.fedAvg(clients, X_test, y_test, frac = frac, bs = bs, epo = epo, lr = lr, comms_round = comms_round)
+    return FL_utils.fedAvg(clients, X_test, y_test, frac = frac, bs = bs, epo = epo, lr = lr, comms_round = comms_round)
 
 
 def cross_val_fedAvg(splitter = 5, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
