@@ -6,12 +6,13 @@ import mailSender
 
 def main():
     try:
-        results = SGD.cross_val_SGD()
-        print(results)
+        results = non_IID.cross_val_fedAvg()
+        string = ("non IID FedAvg cross val: " + str(results))
 
-        mailSender.sendResults(False, results)
+        print(string)
+        mailSender.sendResults(False, string)
 
     except Exception as e:
         mailSender.sendResults(True, None)
 
-print(SGD.simpleSGDTest())
+main()

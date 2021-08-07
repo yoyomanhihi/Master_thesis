@@ -354,7 +354,7 @@ def simpleSGD(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100):
                   metrics=metrics)
 
     # fit the SGD training data to model
-    _ = SGD_model.fit(SGD_dataset, epochs=100, verbose=0)
+    _ = SGD_model.fit(SGD_dataset, epochs=100, verbose=2)
 
     #test the SGD global model and print out metrics
     for(X_test, Y_test) in test_batched:

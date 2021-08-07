@@ -55,6 +55,6 @@ def cross_val_SGD(splitter = 5):
 
         clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
 
-        local_accuracy = FL_utils.simpleSGD(clients, X_test, y_test)
+        local_accuracy = FL_utils.simpleSGD(X_train, y_train, X_test, y_test)
         total_accuracy += local_accuracy
     return total_accuracy / splitter
