@@ -15,6 +15,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import MaxPooling2D
+from tensorflow.keras.layers import Dropout
 from tensorflow.keras.layers import Activation
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dense
@@ -30,7 +31,7 @@ def load(paths, verbose=-1):
     for (i, imgpath) in enumerate(paths):
         # load the image and extract the class labels
         im_gray = cv2.imread(imgpath, cv2.IMREAD_GRAYSCALE)
-        image = np.array(im_gray).flatten()
+        image = np.array(im_gray)#.flatten() #CHANGED
         label = imgpath.split(os.path.sep)[-2]
         # scale the image to [0, 1] and add to list
         data.append(image / 255)
@@ -68,6 +69,8 @@ def prepareTrainTest(path):
     label_list = lb.fit_transform(label_list)
     # print(label_list)
 
+    image_list = np.reshape(image_list, (len(image_list), 28, 28, 1)) #CHANGED
+
     # split data into training and test set
     X_train, X_test, y_train, y_test = train_test_split(image_list,
                                                         label_list,
@@ -96,8 +99,8 @@ def prepareAllData(path):
     # apply our function
     image_list, label_list = load(image_paths, verbose=10000)
     image_list = np.array(image_list)
-    # print(image_list[0])
-    # print(label_list)
+
+    image_list = np.reshape(image_list, (len(image_list), 28, 28, 1))  # CHANGED
 
     # binarize the labels
     lb = LabelBinarizer()
@@ -202,6 +205,29 @@ def batch_data(data_shard, bs=32):
 class SimpleMLP:
     @staticmethod
     def build(shape, classes):
+        ##model building
+        model = Sequential()
+        # convolutional layer with rectified linear unit activation
+        model.add(Conv2D(32, kernel_size=(3, 3),
+                         activation='relu',
+                         input_shape=shape))
+        # 32 convolution filters used each of size 3x3
+        # again
+        model.add(Conv2D(64, (3, 3), activation='relu'))
+        # 64 convolution filters used each of size 3x3
+        # choose the best features via pooling
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        # randomly turn neurons on and off to improve convergence
+        model.add(Dropout(0.25))
+        # flatten since too many dimensions, we only want a classification output
+        model.add(Flatten())
+        # fully connected to get all relevant data
+        model.add(Dense(128, activation='relu'))
+        # one more dropout for convergence' sake :)
+        model.add(Dropout(0.5))
+        # output a softmax to squash the matrix into output probabilities
+        model.add(Dense(classes, activation='softmax')),
+        '''
         model = Sequential()
         model.add(Dense(200, input_shape=(shape,)))
         model.add(Activation("relu"))
@@ -209,6 +235,7 @@ class SimpleMLP:
         model.add(Activation("relu"))
         model.add(Dense(classes))
         model.add(Activation("softmax"))
+        '''
         return model
 
 
@@ -335,6 +362,28 @@ def simpleSGD(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100):
             returns:
                 SGD_acc: the global accuracy after comms_round rounds
     '''
+    # # reshaping
+    # # this assumes our data format
+    # # For 3D data, "channels_last" assumes (conv_dim1, conv_dim2, conv_dim3, channels) while
+    # # "channels_first" assumes (channels, conv_dim1, conv_dim2, conv_dim3).
+    # if k.image_data_format() == 'channels_first':
+    #     X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
+    #     X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
+    #     input_shape = (1, img_rows, img_cols)
+    # else:
+    #     X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 1)
+    #     X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 1)
+    #     input_shape = (img_rows, img_cols, 1)
+    # # more reshaping
+    # X_train = X_train.astype('float32')
+    # X_test = X_test.astype('float32')
+    # X_train /= 255
+    # X_test /= 255
+    # print('X_train shape:', X_train.shape)  # X_train shape: (60000, 28, 28, 1)
+
+
+
+
 
     test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
 
@@ -346,14 +395,17 @@ def simpleSGD(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100):
                     )
 
     SGD_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(len(y_train)).batch(320)
+    print("dataset shape: " + str(np.shape(SGD_dataset)))
     smlp_SGD = SimpleMLP()
-    SGD_model = smlp_SGD.build(784, 10)
+    # SGD_model = smlp_SGD.build(784, 10)
+    SGD_model = smlp_SGD.build((28, 28, 1), 10)
 
     SGD_model.compile(loss=loss,
                   optimizer=optimizer,
                   metrics=metrics)
 
     # fit the SGD training data to model
+    print(np.shape(SGD_dataset))
     _ = SGD_model.fit(SGD_dataset, epochs=100, verbose=2)
 
     #test the SGD global model and print out metrics
@@ -397,7 +449,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms
 
     # initialize global model
     smlp_global = SimpleMLP()
-    global_model = smlp_global.build(784, 10)
+    global_model = smlp_global.build((28, 28, 1), 10)
 
     # commence global training loop
     for comm_round in range(comms_round):
@@ -416,7 +468,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms
         nbrclients = int(frac * len(client_names))
         for client in client_names[:nbrclients]:
             smlp_local = SimpleMLP()
-            local_model = smlp_local.build(784, 10)
+            local_model = smlp_local.build((28, 28, 1), 10)
             local_model.compile(loss=loss,
                                 optimizer=optimizer,
                                 metrics=metrics)

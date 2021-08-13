@@ -19,7 +19,7 @@ from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras import backend as K
-import local_FL_utils as FL_utils
+import FL_utils
 
 
 def simpleSGDTest():

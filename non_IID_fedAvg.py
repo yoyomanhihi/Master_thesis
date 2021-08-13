@@ -1,5 +1,5 @@
 import numpy as np
-import local_FL_utils as FL_utils
+import FL_utils
 
 
 def simpleFedAvgTest(num_clients = 10, num_classes = 2, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
