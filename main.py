@@ -7,16 +7,16 @@ import numpy
 import tensorflow
 
 def main():
-    '''
+
     try:
-        results = non_IID.cross_val_fedAvg()
-        string = ("non IID FedAvg cross val: " + str(results))
+        results = SGD.cross_val_SGD()
+        string = ("SGD cross val: " + str(results))
 
         print(string)
         mailSender.sendResults(False, string)
 
     except Exception as e:
         mailSender.sendResults(True, None)
-    '''
-    IID.simpleFedAvgTest()
+
+
 main()
