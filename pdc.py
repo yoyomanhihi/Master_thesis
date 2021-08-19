@@ -5,6 +5,8 @@ import seaborn as sns
 import cv2
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph.opengl as gl
+from sklearn.cluster import KMeans
+from skimage import morphology
 
 import pydicom
 import scipy.ndimage
@@ -185,10 +187,9 @@ def fill_lungs(binary_image):
     return image
 
 
-def segment_lung_mask(image, fill_lung_structures = False):
+def segment_lung_mask_open(image):
     segmented = np.zeros(image.shape)
 
-    #Separate lungs(-700)/air(-1000) and tissues (0)
     for n in range(image.shape[0]):
         binary_image = np.array(image[n] > -320, dtype=np.int8) + 1
         labels = measure.label(binary_image)
@@ -206,6 +207,35 @@ def segment_lung_mask(image, fill_lung_structures = False):
         binary_image = 1 - binary_image  # Invert it, lungs are now 1
 
         segmented[n] = binary_image.copy() * image[n]
+
+    return segmented
+
+
+def segment_lung_mask_closed(image):
+    segmented = np.zeros(image.shape)
+
+    #Separate lungs(-700)/air(-1000) and tissues (0)
+    for n in range(image.shape[0]):
+        binary_image = np.array(image[n] > -320, dtype=np.int8) + 1
+        labels = measure.label(binary_image)
+
+        bad_labels = np.unique([labels[0, :], labels[-1, :], labels[:, 0], labels[:, -1]])
+
+        for bad_label in bad_labels:
+            binary_image[labels == bad_label] = 2
+
+        binary_image_2 = binary_image.copy()
+        for bad_label in bad_labels:
+            binary_image_2[labels == bad_label] = 2
+
+        selem = disk(2)
+        closed_binary_2 = closing(binary_image_2, selem)
+
+        closed_binary_2 -= 1  # Make the image actual binary
+        closed_binary_2 = 1 - closed_binary_2  # Invert it, lungs are now 1
+
+        segmented[n] = closed_binary_2.copy() * image[n]
+
 
     return segmented
 
@@ -251,6 +281,84 @@ def segment_lung_mask2(image, fill_lung_structures=True):
     return binary_image
 
 
+# Standardize the pixel values
+def make_lungmask(img, display=False):
+    row_size = img.shape[0]
+    col_size = img.shape[1]
+
+    mean = np.mean(img)
+    std = np.std(img)
+    img = img - mean
+    img = img / std
+    # Find the average pixel value near the lungs
+    # to renormalize washed out images
+    middle = img[int(col_size / 5):int(col_size / 5 * 4), int(row_size / 5):int(row_size / 5 * 4)]
+    mean = np.mean(middle)
+    max = np.max(img)
+    min = np.min(img)
+    # To improve threshold finding, I'm moving the
+    # underflow and overflow on the pixel spectrum
+    img[img == max] = mean
+    img[img == min] = mean
+    #
+    # Using Kmeans to separate foreground (soft tissue / bone) and background (lung/air)
+    #
+    kmeans = KMeans(n_clusters=2).fit(np.reshape(middle, [np.prod(middle.shape), 1]))
+    centers = sorted(kmeans.cluster_centers_.flatten())
+    threshold = np.mean(centers)
+    thresh_img = np.where(img < threshold, 1.0, 0.0)  # threshold the image
+
+    # First erode away the finer elements, then dilate to include some of the pixels surrounding the lung.
+    # We don't want to accidentally clip the lung.
+
+    eroded = morphology.erosion(thresh_img, np.ones([3, 3]))
+    dilation = morphology.dilation(eroded, np.ones([8, 8]))
+
+    labels = measure.label(dilation)  # Different labels are displayed in different colors
+    label_vals = np.unique(labels)
+    regions = measure.regionprops(labels)
+    good_labels = []
+    for prop in regions:
+        B = prop.bbox
+        if B[2] - B[0] < row_size / 10 * 9 and B[3] - B[1] < col_size / 10 * 9 and B[0] > row_size / 5 and B[
+            2] < col_size / 5 * 4:
+            good_labels.append(prop.label)
+    mask = np.ndarray([row_size, col_size], dtype=np.int8)
+    mask[:] = 0
+
+    #
+    #  After just the lungs are left, we do another large dilation
+    #  in order to fill in and out the lung mask
+    #
+    for N in good_labels:
+        mask = mask + np.where(labels == N, 1, 0)
+    mask = morphology.dilation(mask, np.ones([10, 10]))  # one last dilation
+
+    if (display):
+        fig, ax = plt.subplots(3, 2, figsize=[12, 12])
+        ax[0, 0].set_title("Original")
+        ax[0, 0].imshow(img, cmap='gray')
+        ax[0, 0].axis('off')
+        ax[0, 1].set_title("Threshold")
+        ax[0, 1].imshow(thresh_img, cmap='gray')
+        ax[0, 1].axis('off')
+        ax[1, 0].set_title("After Erosion and Dilation")
+        ax[1, 0].imshow(dilation, cmap='gray')
+        ax[1, 0].axis('off')
+        ax[1, 1].set_title("Color Labels")
+        ax[1, 1].imshow(labels)
+        ax[1, 1].axis('off')
+        ax[2, 0].set_title("Final Mask")
+        ax[2, 0].imshow(mask, cmap='gray')
+        ax[2, 0].axis('off')
+        ax[2, 1].set_title("Apply Mask on Original")
+        ax[2, 1].imshow(mask * img, cmap='gray')
+        ax[2, 1].axis('off')
+
+        plt.show()
+    return mask * img
+
+
 def normalize(image):
     image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
     image[image>1] = 1.
@@ -263,9 +371,44 @@ def zero_center(image):
     return image
 
 
+def sample_stack(stack, rows=6, cols=6, start_with=10, show_every=3):
+    fig,ax = plt.subplots(rows,cols,figsize=[12,12])
+    for i in range(rows*cols):
+        ind = start_with + i*show_every
+        ax[int(i/rows),int(i % rows)].set_title('slice %d' % ind)
+        ax[int(i/rows),int(i % rows)].imshow(stack[ind],cmap='gray')
+        ax[int(i/rows),int(i % rows)].axis('off')
+    plt.show()
+
+
+def resize_volume(img):
+    """Resize across z-axis"""
+    # Set the desired depth
+    desired_depth = 512
+    desired_width = 178
+    desired_height = 512
+    # Get current depth
+    current_depth = img.shape[-1]
+    current_width = img.shape[0]
+    current_height = img.shape[1]
+    # Compute depth factor
+    depth = current_depth / desired_depth
+    width = current_width / desired_width
+    height = current_height / desired_height
+    depth_factor = 1 / depth
+    width_factor = 1 / width
+    height_factor = 1 / height
+    # Resize across z-axis
+    img = scipy.ndimage.zoom(img, (width_factor, height_factor, depth_factor), order=1)
+    return img
+
+
+#################################### Trying the functions ###############################################
+
+
 # Some constants
-# INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
-INPUT_FOLDER = 'OrganisedLung - NSCLS-Radomics-Interobserver1'
+INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
+# INPUT_FOLDER = 'OrganisedLung - NSCLS-Radomics-Interobserver1'
 patients = listdir(INPUT_FOLDER)
 patients.sort()
 MIN_BOUND = -1000.0
@@ -276,26 +419,25 @@ allscans = list()
 for file in listdir(INPUT_FOLDER):
     allscans.append(load_scan(INPUT_FOLDER + '/' + file))
 
-for i in range(len(allscans)):
 
-    first_patient = allscans[i]
+def save_HU():
+    for i in range(len(allscans)):
+        first_patient = allscans[i]
+        hu_scans = transform_to_hu(first_patient)
+        np.save("Lung_HU/LCTSC/" + str(i), hu_scans)
 
-    hu_scans = transform_to_hu(first_patient)
 
-    pix_resampled, spacing = resample(hu_scans, first_patient, [1,1,1])
+def save_segmented():
+    PREPROCESSED_FOLDER = "Lung_segmented/LCTSC"
+    for file in listdir(PREPROCESSED_FOLDER):
+        hu_scans = np.load(PREPROCESSED_FOLDER + "/" + file)
+        segmented_lungs_closed = segment_lung_mask_closed(hu_scans)
+        np.save("Lung_segmented/LCTSC/" + str(file), segmented_lungs_closed)
 
-    plot_3d(pix_resampled, 400)
 
-    segmented_lungs = segment_lung_mask(pix_resampled)
-    segmented_lungs2 = segment_lung_mask2(pix_resampled, False)
-    # segmented_lungs_fill = segment_lung_mask2(pix_resampled, True)
-
-    plot_3d(segmented_lungs, threshold=-600)
-    # kernel = np.ones((5, 5), np.uint8)
-    # dilated_one = cv2.dilate(segmented_lungs2, kernel, iterations=1)
-    plot_3d(segmented_lungs2, 0)
-    # plot_3d_full(segmented_lungs, threshold=-600)
-    # plot_3d_full(segmented_lungs2, 0)
-    # plot_3d(segmented_lungs_fill, 0, color="green")
-
-    plt.show()
+def save_resized():
+    PREPROCESSED_FOLDER = "Lung_segmented/LCTSC"
+    for file in listdir(PREPROCESSED_FOLDER):
+        segmented = np.load(PREPROCESSED_FOLDER + "/" + file)
+        resized = resize_volume(segmented)
+        np.save("Lung_resized/LCTSC/" + str(file), resized)
