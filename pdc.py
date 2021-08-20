@@ -10,9 +10,9 @@ from skimage import morphology
 
 import pydicom
 import scipy.ndimage
+from rt_utils import RTStructBuilder
 
-import glob
-
+import pandas as pd
 from skimage import measure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from skimage.morphology import disk, opening, closing
@@ -407,7 +407,8 @@ def resize_volume(img):
 
 
 # Some constants
-INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
+INPUT_FOLDER = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331"
+# INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
 # INPUT_FOLDER = 'OrganisedLung - NSCLS-Radomics-Interobserver1'
 patients = listdir(INPUT_FOLDER)
 patients.sort()
@@ -415,19 +416,23 @@ MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
 
-allscans = list()
-for file in listdir(INPUT_FOLDER):
-    allscans.append(load_scan(INPUT_FOLDER + '/' + file))
+
+def make_all(allscans):
+    for i in range(len(allscans)):
+        first_patient = allscans[i]
+        hu_scans = transform_to_hu(first_patient)
+        segmented_lungs_closed = segment_lung_mask_closed(hu_scans)
+        plot_3d(segmented_lungs_closed, threshold=-600)
 
 
-def save_HU():
+def save_HU(allscans):
     for i in range(len(allscans)):
         first_patient = allscans[i]
         hu_scans = transform_to_hu(first_patient)
         np.save("Lung_HU/LCTSC/" + str(i), hu_scans)
 
 
-def save_segmented():
+def save_segmented(allscans):
     PREPROCESSED_FOLDER = "Lung_segmented/LCTSC"
     for file in listdir(PREPROCESSED_FOLDER):
         hu_scans = np.load(PREPROCESSED_FOLDER + "/" + file)
@@ -441,3 +446,13 @@ def save_resized():
         segmented = np.load(PREPROCESSED_FOLDER + "/" + file)
         resized = resize_volume(segmented)
         np.save("Lung_resized/LCTSC/" + str(file), resized)
+
+
+# allscans = list()
+# for file in listdir(INPUT_FOLDER):
+#     allscans.append(load_scan(INPUT_FOLDER + '/' + file))
+
+rtstruct = pydicom.dcmread(INPUT_FOLDER + "/" + "3.000000-NA-78236/1-1.dcm")
+print(rtstruct)
+
+# make_all(allscans)
