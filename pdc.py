@@ -359,18 +359,6 @@ def make_lungmask(img, display=False):
     return mask * img
 
 
-def normalize(image):
-    image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
-    image[image>1] = 1.
-    image[image<0] = 0.
-    return image
-
-
-def zero_center(image):
-    image = image - PIXEL_MEAN
-    return image
-
-
 def sample_stack(stack, rows=6, cols=6, start_with=10, show_every=3):
     fig,ax = plt.subplots(rows,cols,figsize=[12,12])
     for i in range(rows*cols):
@@ -407,8 +395,8 @@ def resize_volume(img):
 
 
 # Some constants
-INPUT_FOLDER = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331"
-# INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
+# INPUT_FOLDER = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331"
+INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
 # INPUT_FOLDER = 'OrganisedLung - NSCLS-Radomics-Interobserver1'
 patients = listdir(INPUT_FOLDER)
 patients.sort()
@@ -448,11 +436,8 @@ def save_resized():
         np.save("Lung_resized/LCTSC/" + str(file), resized)
 
 
-# allscans = list()
-# for file in listdir(INPUT_FOLDER):
-#     allscans.append(load_scan(INPUT_FOLDER + '/' + file))
+allscans = list()
+for file in listdir(INPUT_FOLDER):
+    allscans.append(load_scan(INPUT_FOLDER + '/' + file))
 
-rtstruct = pydicom.dcmread(INPUT_FOLDER + "/" + "3.000000-NA-78236/1-1.dcm")
-print(rtstruct)
-
-# make_all(allscans)
+make_all(allscans)
