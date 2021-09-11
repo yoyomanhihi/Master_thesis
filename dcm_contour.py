@@ -12,8 +12,6 @@ contour_path = 'NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LU
 
 contour_data = dicom.read_file(contour_path)
 
-print(contour_data)
-
 print(dcm.get_roi_names(contour_data))
 
 
@@ -39,19 +37,19 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     return img_contour_arrays
 
 # get all image-contour array pairs
-contour_arrays = cfile2pixels(file="1-1.dcm", path=image_path, ROIContourSeq=0)
+contour_arrays = cfile2pixels(file="1-1.dcm", path=image_path, ROIContourSeq=2)
 
-# # get first image - contour array
-# first_image, first_contour, img_id = contour_arrays[4]
-#
-# # show an example
-# plt.figure(figsize=(20, 10))
-# plt.subplot(1,2,1)
-# plt.imshow(first_image)
-# plt.subplot(1,2,2)
-# plt.imshow(first_contour)
-#
-# plt.show()
+# get first image - contour array
+first_image, first_contour, img_id = contour_arrays[4]
+
+# show an example
+plt.figure(figsize=(20, 10))
+plt.subplot(1,2,1)
+plt.imshow(first_image)
+plt.subplot(1,2,2)
+plt.imshow(first_contour)
+
+plt.show()
 
 
 def slice_order(path):
@@ -186,5 +184,7 @@ def print_shapes():
             newpath3 = newpath2 + "/" + newfiles2[0]
             im = cv2.imread(newpath3)
             print(im.shape)
+
+print_shapes()
 
 
