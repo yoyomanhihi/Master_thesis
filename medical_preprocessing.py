@@ -1,18 +1,12 @@
 import cv2
 import sys
-import numpy
-numpy.set_printoptions(threshold=sys.maxsize)
+import numpy as np
+import os
 
-mask_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/masks/mask_73.png"
-image_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/images/image_73.png"
+np.set_printoptions(threshold=sys.maxsize)
 
-mask = cv2.imread(mask_path)
-image = cv2.imread(image_path)
-
-px = mask[254, 370] #yellow = [36 231 253]
-px2 = mask[0, 0] #purple = [84 1 68]
-print(px)
-print(px2)
+masks_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/masks"
+images_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/images"
 
 # cv2.imshow('Window name', image)
 #
@@ -28,10 +22,6 @@ def isYellow(pixel):
 def crop(image, y, x): #vertical, horizontal
     ''' Return a 32x32 image with top left corner of coordonate(y, x) '''
     crop_img = image[y:y + 32, x:x + 32]
-    cv2.imshow('Cropped', crop_img)
-    #
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
     return crop_img
 
 
@@ -41,11 +31,14 @@ def isFullYellow(mask, y, x):
         return True
 
 
-def allFullYellow(mask):
-    ''' Return a list of all coordonates of the image that are full yellow '''
+def allFullYellow(mask, jump=2):
+    ''' Return a list of coordonates of the image that are full yellow
+        args:
+            mask: the image with the segmented tumor
+            jump: the jump in the range'''
     allcoords = []
-    for y in range(480):
-        for x in range(480):
+    for y in range(0, 480, jump):
+        for x in range(0, 480, jump):
             if (isFullYellow(mask, y, x)):
                 allcoords.append((y, x))
     return allcoords
@@ -57,16 +50,74 @@ def isFullPurple(mask, y, x):
         return True
 
 
-def allFullPurple(mask):
-    ''' Return a list of all coordonates of the image that are full purple '''
+def allFullPurple(mask, jump=40):
+    ''' Return a list of coordonates of the image that are full purple
+        args:
+            mask: the image with the segmented tumor
+            jump: the jump in the range'''
     allcoords = []
-    for y in range(480):
-        for x in range(480):
+    for y in range(0, 480, jump):
+        for x in range(0, 480, jump):
             if (isFullPurple(mask, y, x)):
                 allcoords.append((y, x))
     return allcoords
 
 
-fullyellows = allFullYellow(mask)
+def prepareAllYellows(allyellows, image):
+    ''' Prepare the data for all tumor subimages from one 2d image
+        args:
+            allyellows: list of top left corner pixels from image to select
+            image: the 2d image
+        returns:
+            data: the list of subimages + label to add to the dataset'''
+    images_list = []
+    for pixel in allyellows:
+        images_list.append(crop(image, pixel[0], pixel[1]))
+    labels_list = np.ones((len(allyellows),), dtype=int)
+    data = list(zip(images_list, labels_list))
+    return data
 
-crop(image, fullyellows[200][0], fullyellows[200][1])
+
+def prepareAllPurples(allpurples, image):
+    ''' Prepare the data for all non-tumor subimages from one 2d image
+        args:
+            allyellows: list of top left corner pixels from image to select
+            image: the 2d image
+        returns:
+            data: the list of subimages + label to add to the dataset'''
+    images_list = []
+    for pixel in allpurples:
+        images_list.append(crop(image, pixel[0], pixel[1]))
+    labels_list = np.zeros((len(allpurples),), dtype=int)
+    data = list(zip(images_list, labels_list))
+    return data
+
+
+def generateDatasetFromOneClient(masks_path, images_path):
+    ''' Generate the full 2d dataset from one client
+        args:
+            masks_path: directory path to all the masks of the client
+            images_path: directory path to all images of the client
+        returns:
+            dataset: the full dataset of the client'''
+    dataset = []
+    masks_files = os.listdir(masks_path)
+    for i in range(len(masks_files)):
+        mask_file = masks_path + "/mask_" + str(i) + ".png"
+        mask = cv2.imread(mask_file)
+        image_file = images_path + "/image_" + str(i) + ".png"
+        image = cv2.imread(image_file)
+        allyellows = allFullYellow(mask)
+        allpurples = allFullPurple(mask)
+        if len(allyellows) > 0:
+            dataset.append(prepareAllYellows(allyellows, image))
+        dataset.extend(prepareAllPurples(allpurples, image))
+        return dataset
+
+
+
+
+
+generateDatasetFromOneClient(masks_path, images_path)
+
+# crop(image, fullyellows[200][0], fullyellows[200][1])
