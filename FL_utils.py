@@ -69,7 +69,7 @@ def prepareTrainTest(path):
     label_list = lb.fit_transform(label_list)
     # print(label_list)
 
-    image_list = np.reshape(image_list, (len(image_list), 28, 28, 1)) #CHANGED
+    image_list = np.reshape(image_list, (len(image_list), 28, 28, 1))
 
     # split data into training and test set
     X_train, X_test, y_train, y_test = train_test_split(image_list,

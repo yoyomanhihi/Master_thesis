@@ -1,6 +1,7 @@
 import FL_utils
 import IID_fedAvg as IID
 import non_IID_fedAvg as non_IID
+import medical_preprocessing
 import SGD
 import mailSender
 import numpy
@@ -9,8 +10,8 @@ import tensorflow
 def main():
 
     try:
-        results = SGD.cross_val_SGD()
-        string = ("SGD cross val: " + str(results))
+        results = medical_preprocessing.generateAndStore()
+        string = ("evaluation of the dataset generated: " + str(results))
 
         print(string)
         mailSender.sendResults(False, string)
