@@ -100,7 +100,7 @@ def prepareAllData(path):
     image_list, label_list = load(image_paths, verbose=10000)
     image_list = np.array(image_list)
 
-    image_list = np.reshape(image_list, (len(image_list), 28, 28, 1))
+    image_list = np.reshape(image_list, (len(image_list), 28, 28, 1)) # Only for CNN
 
     # binarize the labels
     lb = LabelBinarizer()

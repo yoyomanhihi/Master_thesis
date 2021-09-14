@@ -6,8 +6,6 @@ from tensorflow.keras.layers import Flatten
 import pickle
 import random
 
-np.set_printoptions(threshold=sys.maxsize)
-
 masks_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/masks"
 images_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/images"
 general_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics"
@@ -73,9 +71,15 @@ def allFullPurple(mask, jump=200):
     return allcoords
 
 
-def randomFullPurple(mask):
+def randomFullPurple(mask, nbr = 5):
+    ''' Generate at most nbr random coordonates of full purple coordonates
+        args:
+            mask: the 512 x 512 mask of the segmentation
+            nbr: the number of random pixel generated (kept only if full purple)
+        returns:
+            purples, the list of full purple pixels coordonates'''
     purples = []
-    for i in range(5):
+    for i in range(nbr):
         y = random.randint(0, 479)
         x = random.randint(0, 479)
         if isFullPurple(mask, y, x):
@@ -132,7 +136,7 @@ def generateDatasetFromOneClient(masks_path, images_path):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         mask = cv2.imread(mask_file)
         image_file = images_path + "/image_" + str(i) + ".png"
-        image = cv2.imread(image_file)
+        image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
         allyellows = allFullYellow(mask)
         allpurples = randomFullPurple(mask)
         dataset.extend(prepareAllYellows(allyellows, image))
@@ -156,15 +160,15 @@ def evaluateDatasetRatio(dataset):
 
 
 def storeDataset(dataset):
-    with open('my_dataset.pickle', 'wb') as output:
+    with open('small_dataset.pickle', 'wb') as output:
         pickle.dump(dataset, output)
 
 
-def generateDatasetForManyClients(general_path, nbclients = 300):
+def generateDatasetFromManyClients(general_path, nbclients = 300):
     dataset = []
     files = os.listdir(general_path)
     files.sort()
-    for f in files[2:nbclients]:
+    for f in files[1:nbclients]:
         newpath = general_path + "/" + f
         images_path = newpath + "/images"
         masks_path = newpath + "/masks"
@@ -173,12 +177,15 @@ def generateDatasetForManyClients(general_path, nbclients = 300):
 
 
 def generateAndStore():
-    dataset = generateDatasetForManyClients(general_path)
+    dataset = generateDatasetFromManyClients(general_path, nbclients=10)
     evaluation = evaluateDatasetRatio(dataset)
     storeDataset(dataset)
     return evaluation
 
+
 generateAndStore()
+
+
 
 
 
