@@ -160,7 +160,7 @@ def evaluateDatasetRatio(dataset):
 
 
 def storeDataset(dataset):
-    with open('small_dataset.pickle', 'wb') as output:
+    with open('dataset.pickle', 'wb') as output:
         pickle.dump(dataset, output)
 
 
@@ -177,7 +177,7 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
 
 
 def generateAndStore():
-    dataset = generateDatasetFromManyClients(general_path, nbclients=10)
+    dataset = generateDatasetFromManyClients(general_path, nbclients=300)
     evaluation = evaluateDatasetRatio(dataset)
     storeDataset(dataset)
     return evaluation
