@@ -59,7 +59,7 @@ def bcr(TP, FP, TN, FN):
     return (left + right) / 2
 
 
-def test_model(x_test, y_test, model, comm_round):
+def test_model(x_test, y_test, model):
     """ Calculates the accuracy and the loss of the model
         args:
             X_test: test set data
@@ -130,7 +130,7 @@ def simpleSGD(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100):
 
     #test the SGD global model and print out metrics
     for(X_test, Y_test) in test_batched:
-            SGD_acc = test_model(X_test, Y_test, SGD_model, 1)
+            SGD_acc = test_model(X_test, Y_test, SGD_model)
 
     return SGD_acc
 
