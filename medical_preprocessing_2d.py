@@ -137,6 +137,7 @@ def generateDatasetFromOneClient(masks_path, images_path):
         mask = cv2.imread(mask_file)
         image_file = images_path + "/image_" + str(i) + ".png"
         image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
+        image = image/255
         allyellows = allFullYellow(mask)
         allpurples = randomFullPurple(mask)
         dataset.extend(prepareAllYellows(allyellows, image))
@@ -145,6 +146,12 @@ def generateDatasetFromOneClient(masks_path, images_path):
 
 
 def evaluateDatasetRatio(dataset):
+    ''' Count the repartition of tumors and non tumor examples in the dataset
+        args:
+            dataset: dataset of images and their classification
+        return:
+            count0: number of non tumor examples
+            count1: number of tumor examples'''
     count0 = 0
     count1 = 0
     for i in dataset:
@@ -159,8 +166,9 @@ def evaluateDatasetRatio(dataset):
     return (count0, count1)
 
 
-def storeDataset(dataset):
-    with open('dataset.pickle', 'wb') as output:
+def storeDataset(dataset, name):
+    """ Store the dataset as a pickle file"""
+    with open(name, 'wb') as output:
         pickle.dump(dataset, output)
 
 
@@ -176,14 +184,14 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
     return dataset
 
 
-def generateAndStore():
-    dataset = generateDatasetFromManyClients(general_path, nbclients=300)
+def generateAndStore(name, nbclients):
+    dataset = generateDatasetFromManyClients(general_path, nbclients=nbclients)
     evaluation = evaluateDatasetRatio(dataset)
-    storeDataset(dataset)
+    storeDataset(dataset, name)
     return evaluation
 
 
-generateAndStore()
+generateAndStore('small_2d_dataset.pickle', nbclients=10)
 
 
 

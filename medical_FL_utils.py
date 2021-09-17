@@ -10,6 +10,7 @@ from tensorflow.keras.optimizers import SGD
 from sklearn.preprocessing import LabelBinarizer
 import sys
 import cv2
+import os
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -21,7 +22,7 @@ def load(path):
         return data
 
 
-def prepareTrainTest(path):
+def prepareTrainTest_2d(path):
     ''' Open the data and prepare it for ML
         args:
             path: path to the file where the data is stored
@@ -38,7 +39,44 @@ def prepareTrainTest(path):
     inputs = []
     outputs = []
     for elem in data:
-        inputs.append(elem[0]/255) #TOFIX: also divide x, y by 255
+        # Set the coordonates of the image between 0 and 1
+        elem[0][1024] = elem[0][1024]/480
+        elem[0][1025] = elem[0][1025]/480
+        # Add the inputs and outputs to the data
+        inputs.append(elem[0])
+        outputs.append(elem[1])
+    x_train = inputs[:train_size]
+    y_train = outputs[:train_size]
+    x_test = inputs[train_size:]
+    y_test = outputs[train_size:]
+    y_train = np.asarray(y_train).astype('float32').reshape((-1, 1))
+    y_test = np.asarray(y_test).astype('float32').reshape((-1, 1))
+    return x_train, y_train, x_test, y_test
+
+
+def prepareTrainTest_3d(path):
+    ''' Open the data and prepare it for ML
+        args:
+            path: path to the file where the data is stored
+        return:
+            x_train: training images
+            y_train: training labels
+            x_test: test images
+            y_test: test labels'''
+    data = load(path)
+    data = np.array(data)
+    np.random.shuffle(data)
+    size = len(data)
+    train_size = int(0.8*size)
+    inputs = []
+    outputs = []
+    for elem in data:
+        # Set the coordonates of the image between 0 and 1
+        elem[0][32768] = elem[0][32768]/600 #600 seems to be a good choice
+        elem[0][32769] = elem[0][32769]/480
+        elem[0][32770] = elem[0][32770]/480
+        # Add the inputs and outputs to the data
+        inputs.append(elem[0])
         outputs.append(elem[1])
     x_train = inputs[:train_size]
     y_train = outputs[:train_size]
@@ -202,24 +240,56 @@ def crop_2d(image, y, x): #vertical, horizontal
 
 def segmentation_2d(model, image_path):
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    print("shape image: " + str(image.shape))
     predictions = np.zeros((512, 512))
     image = image/255
     for y in range(0, 480, 10):
         print("predicting line: " + str(y))
         for x in range(0, 480, 10):
             flatten_subimage = crop_2d(image, y, x).flatten()
-            flatten_subimage = np.append(flatten_subimage, y)
-            flatten_subimage = np.append(flatten_subimage, x)
+            flatten_subimage = np.append(flatten_subimage, y/480)
+            flatten_subimage = np.append(flatten_subimage, x/480)
             reshaped = np.reshape(flatten_subimage, (1,1026))
-            print(reshaped)
             pred = model.predict(reshaped)
-            # print(pred[0])
-            if pred > 0.5:
+            if pred[0] > 0.5:
                 print("FOUND A TUMOR HERE GUYS")
                 predictions[y:y + 32, x:x + 32] += 1
     print(predictions)
     return predictions
+
+
+def crop_3d(image, z, y, x): #vertical, horizontal
+    ''' Return a 32x32 image with top left corner of coordonate(y, x) '''
+    crop_img = image[z: z + 32, y:y + 32, x:x + 32]
+    return crop_img
+
+
+def segmentation_3d(model, images_path):
+    predictions = np.zeros((512, 512, 512))
+    image_3d = []
+    size = len(os.listdir(images_path))
+    for i in range(size):
+        image_path = images_path + "/image_" + str(i) +".png"
+        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        image = image/255
+        image_3d.append(image)
+    image_3d = np.array(image_3d)
+    depth = len(image_3d)
+    for z in range(0, depth-32, 10):
+        print("predicting depth: " + str(z))
+        for y in range(0, 480, 10):
+            for x in range(0, 480, 10):
+                flatten_subimage = crop_3d(image_3d, z, y, x).flatten()
+                flatten_subimage = np.append(flatten_subimage, z/600)
+                flatten_subimage = np.append(flatten_subimage, y/480)
+                flatten_subimage = np.append(flatten_subimage, x/480)
+                reshaped = np.reshape(flatten_subimage, (1,32771))
+                pred = model.predict(reshaped)
+                if pred[0] > 0.5:
+                    print("FOUND A TUMOR HERE GUYS")
+                    predictions[z:z + 32, y:y + 32, x:x + 32] += 1
+    print(predictions)
+    return predictions
+
 
 
 
