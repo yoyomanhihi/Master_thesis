@@ -10,10 +10,32 @@ masks_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG
 images_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/images"
 general_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics"
 
-# cv2.imshow('Window name', image)
-#
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
+
+def generateImagesPath(general_path, client_nbr):
+    number_string = "%03d" % client_nbr
+    print(number_string)
+    return general_path + "/LUNG1-" + number_string + "/images"
+
+
+def generateMasksPath(general_path, client_nbr):
+    number_string = "%03d" % client_nbr
+    print(number_string)
+    return general_path + "/LUNG1-" + number_string + "/masks"
+
+
+def generateClientPath(general_path, client_nbr):
+    number_string = "%03d" % client_nbr
+    print(number_string)
+    return general_path + "/LUNG1-" + number_string
+
+
+def createClientsPathsList(general_path):
+    clients_paths = []
+    size = len(os.listdir(general_path))
+    for i in range(1, size, 1):
+        clients_paths.append(generateClientPath(general_path, i))
+    return clients_paths
+
 
 def displayImage(image):
     cv2.imshow('Window name', image)
@@ -173,6 +195,12 @@ def storeDataset(dataset, name):
 
 
 def generateDatasetFromManyClients(general_path, nbclients = 300):
+    ''' Generate a dataset with example images from many clients
+        args:
+            general_path: path to all the client's images and masks
+            nbclients: number of clients to be considered to create the dataset
+        return:
+            dataset: the final dataset generated'''
     dataset = []
     files = os.listdir(general_path)
     files.sort()
@@ -185,6 +213,14 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
 
 
 def generateAndStore(name, nbclients):
+    ''' Generate a dataset from many clients and store it in the files
+        args:
+            name: name of the file to save
+            nbclients: number of clients to be considered to create the dataset
+        return:
+            evalutation: tuple of the form (count0, count1)
+            count0: number of non tumor examples
+            count1: number of tumor examples'''
     dataset = generateDatasetFromManyClients(general_path, nbclients=nbclients)
     evaluation = evaluateDatasetRatio(dataset)
     storeDataset(dataset, name)

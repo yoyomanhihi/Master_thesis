@@ -14,10 +14,6 @@ images_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUN
 dcm_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/01-01-2014-StudyID-NA-85095/1.000000-NA-61228"
 general_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics"
 
-# cv2.imshow('Window name', image)
-#
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
 
 def displayImage(image):
     cv2.imshow('Window name', image)
@@ -213,6 +209,12 @@ def storeDataset(dataset, name):
 
 
 def generateDatasetFromManyClients(general_path, nbclients = 300):
+    ''' Generate a dataset with example images from many clients
+        args:
+            general_path: path to all the client's images and masks
+            nbclients: number of clients to be considered to create the dataset
+        return:
+            dataset: the final dataset generated'''
     dataset = []
     files = os.listdir(general_path)
     files.sort()
@@ -232,6 +234,14 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
 
 
 def generateAndStore(name, nbclients):
+    ''' Generate a dataset from many clients and store it in the files
+        args:
+            name: name of the file to save
+            nbclients: number of clients to be considered to create the dataset
+        return:
+            evalutation: tuple of the form (count0, count1)
+            count0: number of non tumor examples
+            count1: number of tumor examples'''
     dataset = generateDatasetFromManyClients(general_path, nbclients=nbclients)
     evaluation = evaluateDatasetRatio(dataset)
     storeDataset(dataset, name)

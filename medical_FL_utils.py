@@ -8,6 +8,8 @@ import tensorflow as tf
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.optimizers import SGD
 from sklearn.preprocessing import LabelBinarizer
+import medical_preprocessing_2d as med_prep_2d
+import medical_preprocessing_3d as med_prep_3d
 import sys
 import cv2
 import os
@@ -233,7 +235,7 @@ def simpleSGD_3d(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100)
 
 
 def crop_2d(image, y, x): #vertical, horizontal
-    ''' Return a 32x32 image with top left corner of coordonate(y, x) '''
+    ''' Return a 32x32 image with top left corner of coordonate(y, x)'''
     crop_img = image[y:y + 32, x:x + 32]
     return crop_img
 

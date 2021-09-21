@@ -310,26 +310,18 @@ def biggerLabel(label1, label2):
 
 def mergeSort(arr):
     ''' Sort an array of one hot encoded labels '''
-
     if len(arr) > 1:
-
         # Finding the mid of the array
         mid = len(arr) // 2
-
         # Dividing the array elements
         L = arr[:mid]
-
         # into 2 halves
         R = arr[mid:]
-
         # Sorting the first half
         mergeSort(L)
-
         # Sorting the second half
         mergeSort(R)
-
         i = j = k = 0
-
         # Copy data to temp arrays L[] and R[]
         while i < len(L) and j < len(R):
             if biggerLabel(L[i][1], R[j][1]):
@@ -339,13 +331,11 @@ def mergeSort(arr):
                 arr[k] = R[j]
                 j += 1
             k += 1
-
         # Checking if any element was left
         while i < len(L):
             arr[k] = L[i]
             i += 1
             k += 1
-
         while j < len(R):
             arr[k] = R[j]
             j += 1
@@ -355,12 +345,12 @@ def mergeSort(arr):
 
 def simpleSGD(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100):
     ''' Simple SGD algorithm
-            args:
-                clients: dictionary of the clients and their data
-                X_test: test set data
-                y_test: test set labels
-            returns:
-                SGD_acc: the global accuracy after comms_round rounds
+        args:
+            clients: dictionary of the clients and their data
+            X_test: test set data
+            y_test: test set labels
+        returns:
+            SGD_acc: the global accuracy after comms_round rounds
     '''
     # # reshaping
     # # this assumes our data format
