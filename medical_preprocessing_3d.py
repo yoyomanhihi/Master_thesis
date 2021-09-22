@@ -8,11 +8,23 @@ import random
 import re
 import pydicom as dicom
 
-masks_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/masks"
-images_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/images"
-# dcm_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
-dcm_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/01-01-2014-StudyID-NA-85095/1.000000-NA-61228"
-general_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics"
+# general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
+general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
+
+
+def generateImagesPath(general_path, client_nbr):
+    file = os.listdir(general_path)[client_nbr+1]
+    path = general_path + "/" + file
+    return path + "/images"
+
+
+def generateMasksPath(general_path, client_nbr):
+    file = os.listdir(general_path)[client_nbr+1]
+    path = general_path + "/" + file
+    return path + "/masks"
+
+images_path = generateImagesPath(general_path, 0)
+masks_path = generateMasksPath(general_path, 0)
 
 
 def displayImage(image):
@@ -218,7 +230,8 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
     dataset = []
     files = os.listdir(general_path)
     files.sort()
-    for f in files[1:nbclients]:
+    size = max(nbclients, len(files) - 1)
+    for f in files[1:size]:
         newpath = general_path + "/" + f
         images_path = newpath + "/images"
         masks_path = newpath + "/masks"
@@ -231,7 +244,6 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
                 break
         dataset.extend(generateDatasetFromOneClient(masks_path, images_path, dcm_path2))
     return dataset
-
 
 def generateAndStore(name, nbclients):
     ''' Generate a dataset from many clients and store it in the files
@@ -248,7 +260,7 @@ def generateAndStore(name, nbclients):
     return evaluation
 
 
-generateAndStore('small_3d_dataset.pickle', 10)
+# generateAndStore('small_3d_dataset.pickle', 10)
 
 
 

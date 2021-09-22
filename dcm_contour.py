@@ -7,8 +7,9 @@ import operator
 import os
 import cv2
 
-image_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
-contour_path = 'NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
+image_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/01-01-2014-StudyID-NA-85095/1.000000-NA-61228"
+contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/01-01-2014-StudyID-NA-85095/1.000000-NA-61228/1-1.dcm'
+general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 
 contour_data = dicom.read_file(contour_path)
 
@@ -19,12 +20,12 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     """
     Given a contour file and path of related images return pixel arrays for contours
     and their corresponding images.
-    Inputs
+    args:
         file: filename of contour
         path: path that has contour and image files
-        ROIContourSeq: tells which sequence of contouring to use default 0 (RTV)
-    Return
-        contour_iamge_arrays: A list which have pairs of img_arr and contour_arr for a given contour file
+        ROIContourSeq: tells which sequence of contouring to use default 0
+    return:
+        img_contour_arrays: A list which have pairs of img_arr and contour_arr for a given contour file
     """
     # handle `/` missing
     if path[-1] != '/': path += '/'
@@ -37,7 +38,7 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     return img_contour_arrays
 
 # get all image-contour array pairs
-contour_arrays = cfile2pixels(file="1-1.dcm", path=image_path, ROIContourSeq=2)
+contour_arrays = cfile2pixels(file="1-1.dcm", path=image_path, ROIContourSeq=0)
 
 # get first image - contour array
 first_image, first_contour, img_id = contour_arrays[4]
@@ -116,19 +117,29 @@ def get_data(path, index):
     return np.array(images), np.array(contours)
 
 
-images, contours = get_data(image_path, index=0)
-
-
-for img_arr, contour_arr in zip(images[79:80], contours[79:80]):
-    dcm.plot2dcontour(img_arr, contour_arr)
+# images, contours = get_data(image_path, index=0)
+#
+#
+# for img_arr, contour_arr in zip(images[79:80], contours[79:80]):
+#     dcm.plot2dcontour(img_arr, contour_arr)
 
 # cntr = contours[80]
 # plt.imshow(cntr)
 #
 # plt.show()
 
+def get_index(path, index_name):
+    contour_path = path + "/1-1.dcm"
+    contour_data = dicom.read_file(contour_path)
+    roi_names = dcm.get_roi_names(contour_data)
+    for i in range(len(roi_names)):
+        if roi_names[i] == index_name:
+            return i
+    print('index named {} not found in roi sequence: {}'.format(index_name, roi_names))
+    print(path)
 
-def create_image_mask_files(path, index, img_format='png'):
+
+def create_image_mask_files(path, index_name, img_format='png'):
     """
     Create image and corresponding mask files under to folders '/images' and '/masks'
     in the parent directory of path.
@@ -139,6 +150,7 @@ def create_image_mask_files(path, index, img_format='png'):
         img_format (str): image format to save by, png by default
     """
     # Extract Arrays from DICOM
+    index = get_index(path, index_name)
     X, Y = get_data(path, index)
     Y = np.array([dcm.fill_contour(y) if y.max() == 1 else y for y in Y])
 
@@ -151,13 +163,11 @@ def create_image_mask_files(path, index, img_format='png'):
         plt.imsave(new_path + f'/masks/mask_{i}.{img_format}', Y[i, :, :])
 
 
-def create_image_mask_forall():
-    patients_paths = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics"
+def create_image_mask_forall(general_path, index_name):
+    patients_folders = os.listdir(general_path)
 
-    patients_folders = os.listdir(patients_paths)
-
-    for folder in patients_folders:
-        newpath = patients_paths + "/" + folder
+    for folder in patients_folders[251:]:
+        newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
             for f2 in newfiles:
@@ -167,16 +177,14 @@ def create_image_mask_forall():
                     newpath3 = newpath2 + "/" + f3
                     newfiles3 = os.listdir(newpath3)
                     if len(newfiles3) > 5:
-                        create_image_mask_files(newpath3, 0, img_format='png')
+                        create_image_mask_files(newpath3, index_name, img_format='png')
 
 
-def print_shapes():
-    patients_paths = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics"
-
-    patients_folders = os.listdir(patients_paths)
+def print_shapes(general_path):
+    patients_folders = os.listdir(general_path)
 
     for folder in patients_folders:
-        newpath = patients_paths + "/" + folder
+        newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newpath2 = newpath + "/" + "images"
             newfiles2 = os.listdir(newpath2)
@@ -185,6 +193,6 @@ def print_shapes():
             im = cv2.imread(newpath3)
             print(im.shape)
 
-print_shapes()
+create_image_mask_forall(general_path, 'GTV-1') # 128 first made
 
 

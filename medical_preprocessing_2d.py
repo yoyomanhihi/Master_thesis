@@ -6,21 +6,23 @@ from tensorflow.keras.layers import Flatten
 import pickle
 import random
 
-masks_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/masks"
-images_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/images"
-general_path = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics"
+# general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
+general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
 
 
 def generateImagesPath(general_path, client_nbr):
-    number_string = "%03d" % client_nbr
-    print(number_string)
-    return general_path + "/LUNG1-" + number_string + "/images"
+    file = os.listdir(general_path)[client_nbr+1]
+    path = general_path + "/" + file
+    return path + "/images"
 
 
 def generateMasksPath(general_path, client_nbr):
-    number_string = "%03d" % client_nbr
-    print(number_string)
-    return general_path + "/LUNG1-" + number_string + "/masks"
+    file = os.listdir(general_path)[client_nbr+1]
+    path = general_path + "/" + file
+    return path + "/masks"
+
+images_path = generateImagesPath(general_path, 0)
+masks_path = generateMasksPath(general_path, 0)
 
 
 def generateClientPath(general_path, client_nbr):
@@ -61,7 +63,7 @@ def isFullYellow(mask, y, x):
         return True
 
 
-def allFullYellow(mask, jump=30):
+def allFullYellow(mask, jump=3):
     ''' Return a list of coordonates of the image that are full yellow
         args:
             mask: the image with the segmented tumor
@@ -154,6 +156,8 @@ def generateDatasetFromOneClient(masks_path, images_path):
             dataset: the full dataset of the client'''
     dataset = []
     masks_files = os.listdir(masks_path)
+    count0 = 0
+    count1 = 0
     for i in range(len(masks_files)):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         mask = cv2.imread(mask_file)
@@ -162,8 +166,12 @@ def generateDatasetFromOneClient(masks_path, images_path):
         image = image/255
         allyellows = allFullYellow(mask)
         allpurples = randomFullPurple(mask)
+        count0 += len(allpurples)
+        count1 += len(allyellows)
         dataset.extend(prepareAllYellows(allyellows, image))
         dataset.extend(prepareAllPurples(allpurples, image))
+    print("count0: " + str(count0))
+    print("count1: " + str(count1))
     return dataset
 
 
@@ -204,11 +212,13 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
     dataset = []
     files = os.listdir(general_path)
     files.sort()
-    for f in files[1:nbclients]:
-        newpath = general_path + "/" + f
-        images_path = newpath + "/images"
-        masks_path = newpath + "/masks"
-        dataset.extend(generateDatasetFromOneClient(masks_path, images_path))
+    size = min(nbclients, len(files)-1)
+    for f in files[:size]:
+        if f != 'LICENSE':
+            newpath = general_path + "/" + f
+            images_path = newpath + "/images"
+            masks_path = newpath + "/masks"
+            dataset.extend(generateDatasetFromOneClient(masks_path, images_path))
     return dataset
 
 
@@ -223,11 +233,11 @@ def generateAndStore(name, nbclients):
             count1: number of tumor examples'''
     dataset = generateDatasetFromManyClients(general_path, nbclients=nbclients)
     evaluation = evaluateDatasetRatio(dataset)
-    storeDataset(dataset, name)
+    # storeDataset(dataset, name)
     return evaluation
 
 
-generateAndStore('small_2d_dataset.pickle', nbclients=10)
+generateAndStore('small_2d_dataset_2.pickle', nbclients=10)
 
 
 
