@@ -63,7 +63,7 @@ def isFullYellow(mask, y, x):
         return True
 
 
-def allFullYellow(mask, jump=3):
+def allFullYellow(mask, jump=2):
     ''' Return a list of coordonates of the image that are full yellow
         args:
             mask: the image with the segmented tumor
@@ -212,7 +212,7 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
     dataset = []
     files = os.listdir(general_path)
     files.sort()
-    size = min(nbclients, len(files)-1)
+    size = min(nbclients, len(files)-2)
     for f in files[:size]:
         if f != 'LICENSE':
             newpath = general_path + "/" + f
@@ -233,15 +233,9 @@ def generateAndStore(name, nbclients):
             count1: number of tumor examples'''
     dataset = generateDatasetFromManyClients(general_path, nbclients=nbclients)
     evaluation = evaluateDatasetRatio(dataset)
-    # storeDataset(dataset, name)
+    storeDataset(dataset, name)
     return evaluation
 
 
-generateAndStore('small_2d_dataset_2.pickle', nbclients=10)
+# generateAndStore('2d_dataset_2.pickle', nbclients=200)
 
-
-
-
-
-
-# crop(image, fullyellows[200][0], fullyellows[200][1])

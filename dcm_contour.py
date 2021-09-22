@@ -7,8 +7,8 @@ import operator
 import os
 import cv2
 
-image_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/01-01-2014-StudyID-NA-85095/1.000000-NA-61228"
-contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-002/01-01-2014-StudyID-NA-85095/1.000000-NA-61228/1-1.dcm'
+image_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-128/08-04-2006-NA-NA-03538/0.000000-NA-06742"
+contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-128/08-04-2006-NA-NA-03538/0.000000-NA-06742/1-1.dcm'
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 
 contour_data = dicom.read_file(contour_path)
@@ -38,10 +38,10 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     return img_contour_arrays
 
 # get all image-contour array pairs
-contour_arrays = cfile2pixels(file="1-1.dcm", path=image_path, ROIContourSeq=0)
+contour_arrays = cfile2pixels(file="1-1.dcm", path=image_path, ROIContourSeq=1)
 
 # get first image - contour array
-first_image, first_contour, img_id = contour_arrays[4]
+first_image, first_contour, img_id = contour_arrays[2]
 
 # show an example
 plt.figure(figsize=(20, 10))
@@ -193,6 +193,6 @@ def print_shapes(general_path):
             im = cv2.imread(newpath3)
             print(im.shape)
 
-create_image_mask_forall(general_path, 'GTV-1') # 128 first made
+# create_image_mask_forall(general_path, 'GTV-1') # 128 first made
 
 
