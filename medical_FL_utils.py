@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dense
@@ -15,6 +16,8 @@ import sys
 import cv2
 import os
 import random
+import time
+import seaborn
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -136,6 +139,8 @@ class SimpleMLP:
     def build(shape, classes):
         model = Sequential()
         model.add(Dense(200, input_shape=(shape,)))
+        model.add(Activation("relu"))
+        model.add(Dense(200))
         model.add(Activation("relu"))
         model.add(Dense(200))
         model.add(Activation("relu"))
@@ -423,22 +428,37 @@ def crop_2d(image, y, x): #vertical, horizontal
     return crop_img
 
 
+
+def heatMap(predictions):
+    fig, ax = plt.subplots()
+    title = "heat map of the tumor prediction"
+    plt.title(title, fontsize=18)
+    ttl = ax.title
+    ttl.set_position([0.5, 1.05])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.axis('off')
+    seaborn.heatmap(predictions, ax=ax)
+    plt.show()
+
+
+
 def segmentation_2d(model, image_path):
+    print(image_path)
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     predictions = np.zeros((512, 512))
     image = image/255
-    for y in range(0, 480, 10):
+    for y in range(0, 480, 8):
         print("predicting line: " + str(y))
-        for x in range(0, 480, 10):
+        for x in range(0, 480, 8):
             flatten_subimage = crop_2d(image, y, x).flatten()
             flatten_subimage = np.append(flatten_subimage, y/480)
             flatten_subimage = np.append(flatten_subimage, x/480)
             reshaped = np.reshape(flatten_subimage, (1,1026))
             pred = model.predict(reshaped)
-            if pred[0] > 0.5:
-                print("FOUND A TUMOR HERE GUYS")
-                predictions[y:y + 32, x:x + 32] += 1
+            predictions[y:y + 32, x:x + 32] += pred[0]
     print(predictions)
+    heatMap(predictions)
     return predictions
 
 

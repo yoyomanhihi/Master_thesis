@@ -6,8 +6,8 @@ from tensorflow.keras.layers import Flatten
 import pickle
 import random
 
-# general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
-general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
+general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
+# general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
 
 
 def generateImagesPath(general_path, client_nbr):
@@ -63,7 +63,7 @@ def isFullYellow(mask, y, x):
         return True
 
 
-def allFullYellow(mask, jump=2):
+def allFullYellow(mask, jump=4):
     ''' Return a list of coordonates of the image that are full yellow
         args:
             mask: the image with the segmented tumor
@@ -237,5 +237,5 @@ def generateAndStore(name, nbclients):
     return evaluation
 
 
-# generateAndStore('2d_dataset_2.pickle', nbclients=200)
+generateAndStore('small_2d_dataset_1.pickle', nbclients=10)
 
