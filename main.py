@@ -20,4 +20,4 @@ def main():
         mailSender.sendResults(True, None)
 
 
-main()
+# main()
