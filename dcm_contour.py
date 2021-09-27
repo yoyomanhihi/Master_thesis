@@ -283,7 +283,10 @@ def create_image_mask_files(path, index_name, img_format='png'):
     # Extract Arrays from DICOM
     index = get_index(path, index_name)
     X, Y = get_data(path, index)
-    X = np.clip(X, -600, 400)
+    for slice in X:
+        slice[0][0] = 3100
+        slice[511, 511] = -1025
+    # X = np.clip(X, -600, 400)
     Y = np.array([dcm_contour.fill_contour(y) if y.max() == 1 else y for y in Y])
     # Create images and masks folders
     new_path = '/'.join(path.split('/')[:-2])
@@ -303,18 +306,19 @@ def create_image_mask_files(path, index_name, img_format='png'):
 def create_image_mask_forall(general_path, index_name):
     patients_folders = os.listdir(general_path)
 
-    for folder in patients_folders[:12]:
+    for folder in patients_folders[128:]:
         newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
             for f2 in newfiles:
-                newpath2 = newpath + "/" + f2
-                newfiles2 = os.listdir(newpath2)
-                for f3 in newfiles2:
-                    newpath3 = newpath2 + "/" + f3
-                    newfiles3 = os.listdir(newpath3)
-                    if len(newfiles3) > 5:
-                        create_image_mask_files(newpath3, index_name, img_format='png')
+                if f2 != 'images' and f2 != 'masks':
+                    newpath2 = newpath + "/" + f2
+                    newfiles2 = os.listdir(newpath2)
+                    for f3 in newfiles2:
+                        newpath3 = newpath2 + "/" + f3
+                        newfiles3 = os.listdir(newpath3)
+                        if len(newfiles3) > 5:
+                            create_image_mask_files(newpath3, index_name, img_format='png')
 
 
 def print_shapes(general_path):

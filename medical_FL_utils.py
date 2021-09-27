@@ -12,6 +12,7 @@ from tensorflow.keras.optimizers import SGD
 from sklearn.preprocessing import LabelBinarizer
 import medical_preprocessing_2d as med_prep_2d
 import medical_preprocessing_3d as med_prep_3d
+import pydicom as dicom
 import sys
 import cv2
 import os
@@ -21,27 +22,19 @@ import seaborn
 
 np.set_printoptions(threshold=sys.maxsize)
 
+MEAN = 0.1766
+STD = 0.084
+MEANXY = 0.5
+STDXY = 0.28
+MEANZ = 870.6
+STDZ = 454.638
+
 
 def load(path):
     ''' Load the pickle data. The data already contains the 32x32 (32x32x32 in case of 3d) and a correct binary classification'''
     with open(path, 'rb') as f:
         data = pickle.load(f)
         return data
-
-
-def createClients(name, number):
-    ''' Open all the pickle datasets and store each as a client
-        args:
-            name: part of the filenames that is common for the datasets
-            number: number of datasets to be opened
-        return:
-            clients: list of datasets from different sources'''
-    clients = []
-    for i in range(1, number+1, 1):
-        filename = name + str(i) + ".pickle"
-        clients.append(load(filename))
-    return clients
-
 
 
 
@@ -61,13 +54,22 @@ def prepareTrainTest_2d(path):
     train_size = int(0.8*size)
     inputs = []
     outputs = []
+    xy = []
+    z = []
     for elem in data:
         # Set the coordonates of the image between 0 and 1
-        elem[0][1024] = elem[0][1024]/480
         elem[0][1025] = elem[0][1025]/480
+        elem[0][1026] = elem[0][1026]/480
+        xy.append(elem[0][1025])
+        xy.append(elem[0][1026])
+        z.append(elem[0][1024])
         # Add the inputs and outputs to the data
         inputs.append(elem[0])
         outputs.append(elem[1])
+    xy = np.array(xy)
+    z = np.array(z)
+    print("mean z: " + str(z.mean()))
+    print("std z: " + str(z.std()))
     x_train = inputs[:train_size]
     y_train = outputs[:train_size]
     x_test = inputs[train_size:]
@@ -110,6 +112,21 @@ def prepareTrainTest_3d(path):
     return x_train, y_train, x_test, y_test
 
 
+
+def getZ(dcm_path):
+    slices = [dicom.dcmread(dcm_path + '/' + s) for s in os.listdir(dcm_path)[1:]]
+    slices.sort(key=lambda x: float(x.ImagePositionPatient[2]))  # Sort by z axis
+    print(dcm_path)
+    try:
+        slice_thickness = slices[1].ImagePositionPatient[2] - slices[0].ImagePositionPatient[2]
+        Z0 = slices[0].ImagePositionPatient[2]
+    except:
+        slice_thickness = slices[1].SliceLocation - slices[0].SliceLocation
+        Z0 = slices[0].SliceLocation
+    return slice_thickness, Z0
+
+
+
 def generateClientPath(general_path, client_nbr):
     number_string = "%03d" % client_nbr
     return general_path + "/LUNG1-" + number_string
@@ -138,11 +155,11 @@ class SimpleMLP:
     @staticmethod
     def build(shape, classes):
         model = Sequential()
-        model.add(Dense(200, input_shape=(shape,)))
+        model.add(Dense(1000, input_shape=(shape,)))
         model.add(Activation("relu"))
-        model.add(Dense(200))
+        model.add(Dense(1000))
         model.add(Activation("relu"))
-        model.add(Dense(200))
+        model.add(Dense(1000))
         model.add(Activation("relu"))
         model.add(Dense(classes))
         model.add(Activation("sigmoid"))
@@ -228,7 +245,7 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test, lr = 0.01, comms_round = 100)
 
     SGD_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(len(y_train)).batch(320)
     smlp_SGD = SimpleMLP()
-    SGD_model = smlp_SGD.build(1026, 1)
+    SGD_model = smlp_SGD.build(1027, 1)
 
     SGD_model.compile(loss=loss,
                   optimizer=optimizer,
@@ -369,7 +386,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms
 
     # initialize global model
     smlp_global = SimpleMLP()
-    global_model = smlp_global.build(1026, 1)
+    global_model = smlp_global.build(1027, 1)
 
     # commence global training loop
     for comm_round in range(comms_round):
@@ -388,7 +405,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms
         nbrclients = int(frac * len(client_names))
         for client in client_names[:nbrclients]:
             smlp_local = SimpleMLP()
-            local_model = smlp_local.build(1026, 1)
+            local_model = smlp_local.build(1027, 1)
             local_model.compile(loss=loss,
                                 optimizer=optimizer,
                                 metrics=metrics)
@@ -443,18 +460,33 @@ def heatMap(predictions):
 
 
 
-def segmentation_2d(model, image_path):
-    print(image_path)
+def segmentation_2d(model, client_path, img_nbr):
+    image_path = client_path + "/images/image_" + str(img_nbr) + ".png"
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    dcm_file0 = os.listdir(client_path)[0]
+    dcm_path0 = client_path + "/" + dcm_file0
+    dcm_files = os.listdir(dcm_path0)
+    for file in dcm_files:
+        dcm_path = dcm_path0 + "/" + file
+        if len(os.listdir(dcm_path)) > 5:
+            break
+    slice_thickness, Z0 = getZ(dcm_path)
+    z = Z0 + img_nbr*slice_thickness
+    z_whitened = (z-MEANZ)/STDZ
     predictions = np.zeros((512, 512))
     image = image/255
+    image = image-MEAN
+    image = image/STD
     for y in range(0, 480, 8):
         print("predicting line: " + str(y))
+        y_whitened = ((y/480)-MEANXY)/STDXY
         for x in range(0, 480, 8):
+            x_whitened = ((x/480) - MEANXY) / STDXY
             flatten_subimage = crop_2d(image, y, x).flatten()
-            flatten_subimage = np.append(flatten_subimage, y/480)
-            flatten_subimage = np.append(flatten_subimage, x/480)
-            reshaped = np.reshape(flatten_subimage, (1,1026))
+            flatten_subimage = np.append(flatten_subimage, z_whitened)
+            flatten_subimage = np.append(flatten_subimage, y_whitened)
+            flatten_subimage = np.append(flatten_subimage, x_whitened)
+            reshaped = np.reshape(flatten_subimage, (1,1027))
             pred = model.predict(reshaped)
             predictions[y:y + 32, x:x + 32] += pred[0]
     print(predictions)
