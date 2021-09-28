@@ -8,8 +8,36 @@ import random
 import re
 import pydicom as dicom
 
-# general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
-general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
+
+general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
+# general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
+
+MEAN = 0.1783
+STD = 0.0844
+MEANXY = 0.5
+STDXY = 0.28
+MEANZ = 870.6
+STDZ = 454.638
+
+
+def getMeanAndStd(general_path, nbclients):
+    allclients = []
+    files = os.listdir(general_path)
+    files.sort()
+    for f in files[:nbclients]:
+        if f != 'LICENSE':
+            newpath = general_path + "/" + f
+            images_path = newpath + "/images"
+            images_files = os.listdir(images_path)
+            for i in range(len(images_files)):
+                image_file = images_path + "/image_" + str(i) + ".png"
+                image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
+                image = image / 255
+                allclients.extend(image)
+    allclients = np.array(allclients)
+    print("mean: " + str(allclients.mean()))
+    print("std: " + str(allclients.std()))
+
 
 
 def generateImagesPath(general_path, client_nbr):
@@ -34,8 +62,8 @@ def displayImage(image):
 
 
 def isYellow(pixel):
-    ''' Return True if the pixel of the mask is yellow (if it is in the segmented zone) '''
-    if pixel[0] == 36:
+    ''' Return True if the pixel of the mask is yellow (if it is in the segmented zone) ''' #yellow = 215, purple = 30
+    if pixel == 215:
         return True
 
 
@@ -57,7 +85,7 @@ def allFullYellow(mask_3d, slicesnbr, jump=20):
             mask: the image with the segmented tumor
             jump: the jump in the range'''
     allcoords = []
-    for z in range(0, slicesnbr-32, jump):
+    for z in range(0, slicesnbr-8, jump):
         for y in range(0, 480, jump):
             for x in range(0, 480, jump):
                 if (isFullYellow(mask_3d, z, y, x)):
@@ -83,6 +111,22 @@ def allFullPurple(mask_3d, slicesnbr, jump=200):
                 if (isFullPurple(mask_3d, z, y, x)):
                     allcoords.append((z, y, x))
     return allcoords
+
+
+
+def isMostlyYellow(mask_3d, z, y, x):
+    sub_image = crop(mask_3d, z, y, x)
+    return sub_image > 1003520 #(512*215 + 512*30) * 8
+
+
+def allMostlyYellow(mask, jump=6):
+    allcoords = []
+    for y in range(0, 480, jump):
+        for x in range(0, 480, jump):
+            if (isFullYellow(mask, y, x)):
+                allcoords.append((y, x))
+    return allcoords
+
 
 
 def randomFullPurple(mask, slicesnbr, nbr = 20):

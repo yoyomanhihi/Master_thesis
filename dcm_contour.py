@@ -259,15 +259,22 @@ def get_data(path, index):
 #
 # plt.show()
 
-def get_index(path, index_name):
-    contour_path = path + "/1-1.dcm"
+def get_index(dcm_path, index_name):
+    """ Return the index number corresponding to the index name, in the ROI sequence of the patient
+        args:
+            dcm_path: path to the dcm_files
+            index_name: name of the index to find in the ROI sequence of the patient
+        return:
+            i: number of the index corresponding to the index name
+        """
+    contour_path = dcm_path + "/1-1.dcm"
     contour_data = dicom.read_file(contour_path)
     roi_names = dcm_contour.get_roi_names(contour_data)
     for i in range(len(roi_names)):
         if roi_names[i] == index_name:
             return i
     print('index named {} not found in roi sequence: {}'.format(index_name, roi_names))
-    print(path)
+    print(dcm_path)
 
 
 
@@ -304,9 +311,13 @@ def create_image_mask_files(path, index_name, img_format='png'):
 
 
 def create_image_mask_forall(general_path, index_name):
+    """ Create images and masks folders for every patient
+        args:
+            general_path: path to the folder including all patients
+            index_name: name of the index to be segmented in the masks folder
+    """
     patients_folders = os.listdir(general_path)
-
-    for folder in patients_folders[128:]:
+    for folder in patients_folders:
         newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
@@ -321,19 +332,18 @@ def create_image_mask_forall(general_path, index_name):
                             create_image_mask_files(newpath3, index_name, img_format='png')
 
 
-def print_shapes(general_path):
-    patients_folders = os.listdir(general_path)
+# def print_shapes(general_path):
+#     patients_folders = os.listdir(general_path)
+#     for folder in patients_folders:
+#         newpath = general_path + "/" + folder
+#         if(os.path.isdir(newpath)):
+#             newpath2 = newpath + "/" + "images"
+#             newfiles2 = os.listdir(newpath2)
+#             print(newfiles2)
+#             newpath3 = newpath2 + "/" + newfiles2[0]
+#             im = cv2.imread(newpath3)
+#             print(im.shape)
 
-    for folder in patients_folders:
-        newpath = general_path + "/" + folder
-        if(os.path.isdir(newpath)):
-            newpath2 = newpath + "/" + "images"
-            newfiles2 = os.listdir(newpath2)
-            print(newfiles2)
-            newpath3 = newpath2 + "/" + newfiles2[0]
-            im = cv2.imread(newpath3)
-            print(im.shape)
-
-create_image_mask_forall(general_path, 'GTV-1')
+# create_image_mask_forall(general_path, 'GTV-1')
 
 

@@ -10,8 +10,9 @@ import tensorflow
 def main():
 
     try:
+        # results = med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)
         results = med_SGD.make_all()
-        string = ("evaluation of the model: " + str(results))
+        string = ("dataset repartition: " + str(results))
 
         print(string)
         mailSender.sendResults(False, string)
@@ -20,4 +21,7 @@ def main():
         mailSender.sendResults(True, None)
 
 
-# main()
+main()
+
+# med_SGD.make_all()
+# med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)

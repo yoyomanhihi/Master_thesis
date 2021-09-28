@@ -22,6 +22,7 @@ import seaborn
 
 np.set_printoptions(threshold=sys.maxsize)
 
+# Constantes utiles pour le whitening
 MEAN = 0.1766
 STD = 0.084
 MEANXY = 0.5
@@ -114,6 +115,12 @@ def prepareTrainTest_3d(path):
 
 
 def getZ(dcm_path):
+    """ Get the slice_thickness and the initial position of z in order to compute the z position
+        args:
+            dcm_path: path to the dcm files
+        return:
+            slice_thickness: the thickness between two slices
+    """
     slices = [dicom.dcmread(dcm_path + '/' + s) for s in os.listdir(dcm_path)[1:]]
     slices.sort(key=lambda x: float(x.ImagePositionPatient[2]))  # Sort by z axis
     print(dcm_path)
@@ -124,30 +131,6 @@ def getZ(dcm_path):
         slice_thickness = slices[1].SliceLocation - slices[0].SliceLocation
         Z0 = slices[0].SliceLocation
     return slice_thickness, Z0
-
-
-
-def generateClientPath(general_path, client_nbr):
-    number_string = "%03d" % client_nbr
-    return general_path + "/LUNG1-" + number_string
-
-
-def createClientsPathsList(general_path):
-    clients_paths = []
-    size = len(os.listdir(general_path))
-    for i in range(1, size, 1):
-        clients_paths.append(generateClientPath(general_path, i))
-    return clients_paths
-
-
-def createClients(general_path, nbclients=10):
-    client_names = ['client_{}'.format(i + 1) for i in range(nbclients)]
-    clients_paths = createClientsPathsList(general_path)
-    random.shuffle(clients_paths)
-    size = len(clients_paths) // nbclients
-    shards = [clients_paths[i:i + size] for i in range(0, size * nbclients, size)]
-    print(shards)
-    return {client_names[i]: shards[i] for i in range(len(client_names))}
 
 
 class SimpleMLP:
@@ -447,6 +430,7 @@ def crop_2d(image, y, x): #vertical, horizontal
 
 
 def heatMap(predictions):
+    """ Plot the heat map of the tumor predictions"""
     fig, ax = plt.subplots()
     title = "heat map of the tumor prediction"
     plt.title(title, fontsize=18)
@@ -461,6 +445,13 @@ def heatMap(predictions):
 
 
 def segmentation_2d(model, client_path, img_nbr):
+    ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
+        args:
+            model: model used for predictions
+            client_path: path of the client from who the image comes
+            img_nbr: number of the image from the patient to be segmented
+        return:
+            predictions: the 2d array with estimated probability of tumors'''
     image_path = client_path + "/images/image_" + str(img_nbr) + ".png"
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     dcm_file0 = os.listdir(client_path)[0]
@@ -488,8 +479,9 @@ def segmentation_2d(model, client_path, img_nbr):
             flatten_subimage = np.append(flatten_subimage, x_whitened)
             reshaped = np.reshape(flatten_subimage, (1,1027))
             pred = model.predict(reshaped)
+            if pred > 0.5:
+                print((pred, y, x))
             predictions[y:y + 32, x:x + 32] += pred[0]
-    print(predictions)
     heatMap(predictions)
     return predictions
 

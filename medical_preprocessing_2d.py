@@ -20,6 +20,12 @@ STDZ = 454.638
 
 
 def getMeanAndStd(general_path, nbclients):
+    """ Get the mean and the standard deviation of the pixels from the clients.
+        Useful for whitening
+        args:
+            general_path: path to all clients
+            nbclients: number of clients to be evaluated to calculate the mean and standard deviation
+    """
     allclients = []
     files = os.listdir(general_path)
     files.sort()
@@ -40,12 +46,26 @@ def getMeanAndStd(general_path, nbclients):
 
 
 def generateImagesPath(general_path, client_nbr):
+    """ Generate path to the images of the client
+        args:
+            general_path: path to all clients
+            client_nbr: number of the client from which we want the path
+        return:
+            path to the images of the client
+    """
     file = os.listdir(general_path)[client_nbr+1]
     path = general_path + "/" + file
     return path + "/images"
 
 
 def generateMasksPath(general_path, client_nbr):
+    """ Generate path to the masks of the client
+        args:
+            general_path: path to all clients
+            client_nbr: number of the client from which we want the path
+        return:
+            path to the masks of the client
+    """
     file = os.listdir(general_path)[client_nbr+1]
     path = general_path + "/" + file
     return path + "/masks"
@@ -54,28 +74,15 @@ images_path = generateImagesPath(general_path, 0)
 masks_path = generateMasksPath(general_path, 0)
 
 
-def generateClientPath(general_path, client_nbr):
-    number_string = "%03d" % client_nbr
-    print(number_string)
-    return general_path + "/LUNG1-" + number_string
-
-
-def createClientsPathsList(general_path):
-    clients_paths = []
-    size = len(os.listdir(general_path))
-    for i in range(1, size, 1):
-        clients_paths.append(generateClientPath(general_path, i))
-    return clients_paths
-
-
 def displayImage(image):
+    """ Display the 2d image"""
     cv2.imshow('Window name', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
-def isYellow(pixel):
-    ''' Return True if the pixel of the mask is yellow (if it is in the segmented zone) ''' #yellow = 215, purple = 30
+def isYellow(pixel): #yellow = 215, purple = 30
+    ''' Return True if the pixel of the mask is yellow (if it is in the segmented zone) '''
     if pixel == 215:
         return True
 
@@ -125,15 +132,20 @@ def allFullPurple(mask, jump=200):
 
 
 def isMostlyYellow(mask, y, x):
+    ''' Return True if more than 50% of the 32x32 image is yellow '''
     sub_image = crop(mask, y, x)
-    return sub_image > 125440 #512*215 + 512*30
+    return np.sum(sub_image) > 125440 #512*215 + 512*30
 
 
-def allMostlyYellow(mask, jump=6):
+def allMostlyYellow(mask, jump=15):
+    ''' Return a list of coordonates of the image that are more than 50% yellow
+        args:
+            mask: the image with the segmented tumor
+            jump: the jump in the range'''
     allcoords = []
     for y in range(0, 480, jump):
         for x in range(0, 480, jump):
-            if (isFullYellow(mask, y, x)):
+            if (isMostlyYellow(mask, y, x)):
                 allcoords.append((y, x))
     return allcoords
 
@@ -194,6 +206,7 @@ def prepareAllPurples(allpurples, image, z):
 
 
 def sorted_alphanumeric(data):
+    """ Sort the data alphanumerically. allows to have mask_2 before mask_10 for example"""
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
     return sorted(data, key=alphanum_key)
@@ -201,6 +214,12 @@ def sorted_alphanumeric(data):
 
 
 def getZ(dcm_path):
+    """ Get the slice_thickness and the initial position of z in order to compute the z position
+        args:
+            dcm_path: path to the dcm files
+        return:
+            slice_thickness: the thickness between two slices
+    """
     slices = [dicom.dcmread(dcm_path + '/' + s) for s in os.listdir(dcm_path)[1:]]
     slices.sort(key=lambda x: float(x.ImagePositionPatient[2]))  # Sort by z axis
     print(dcm_path)
