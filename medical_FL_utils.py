@@ -429,10 +429,10 @@ def crop_2d(image, y, x): #vertical, horizontal
 
 
 
-def heatMap(predictions):
+def heatMap(predictions, title, img_nbr):
     """ Plot the heat map of the tumor predictions"""
     fig, ax = plt.subplots()
-    title = "heat map of the tumor prediction"
+    title = title + str(img_nbr)
     plt.title(title, fontsize=18)
     ttl = ax.title
     ttl.set_position([0.5, 1.05])
@@ -444,7 +444,7 @@ def heatMap(predictions):
 
 
 
-def segmentation_2d(model, client_path, img_nbr):
+def segmentation_2d(model, client_path, img_nbr, title):
     ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
         args:
             model: model used for predictions
@@ -482,7 +482,7 @@ def segmentation_2d(model, client_path, img_nbr):
             if pred > 0.5:
                 print((pred, y, x))
             predictions[y:y + 32, x:x + 32] += pred[0]
-    heatMap(predictions)
+    heatMap(predictions, title, img_nbr)
     return predictions
 
 

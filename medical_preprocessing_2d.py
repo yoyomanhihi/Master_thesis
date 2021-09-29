@@ -253,7 +253,7 @@ def generateDatasetFromOneClient(masks_path, images_path, dcm_path):
         image = image/255
         image = image-MEAN
         image = image/STD
-        allyellows = allMostlyYellow(mask)
+        allyellows = allFullYellow(mask)
         allpurples = randomFullPurple(mask)
         count0 += len(allpurples)
         count1 += len(allyellows)
