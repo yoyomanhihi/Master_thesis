@@ -98,9 +98,9 @@ def prepareTrainTest_3d(path):
     outputs = []
     for elem in data:
         # Set the coordonates of the image between 0 and 1
-        elem[0][32768] = elem[0][32768]/600 #600 seems to be a good choice
-        elem[0][32769] = elem[0][32769]/480
-        elem[0][32770] = elem[0][32770]/480
+        elem[0][8192] = elem[0][8192]/600 #600 seems to be a good choice
+        elem[0][8193] = elem[0][8193]/480
+        elem[0][8194] = elem[0][8194]/480
         # Add the inputs and outputs to the data
         inputs.append(elem[0])
         outputs.append(elem[1])
@@ -266,7 +266,7 @@ def simpleSGD_3d(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100)
 
     SGD_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(len(y_train)).batch(320)
     smlp_SGD = SimpleMLP()
-    SGD_model = smlp_SGD.build(32771, 1)
+    SGD_model = smlp_SGD.build(8195, 1)
 
     SGD_model.compile(loss=loss,
                   optimizer=optimizer,
@@ -511,7 +511,7 @@ def segmentation_3d(model, images_path):
                 flatten_subimage = np.append(flatten_subimage, z/600)
                 flatten_subimage = np.append(flatten_subimage, y/480)
                 flatten_subimage = np.append(flatten_subimage, x/480)
-                reshaped = np.reshape(flatten_subimage, (1,32771))
+                reshaped = np.reshape(flatten_subimage, (1,8195))
                 pred = model.predict(reshaped)
                 if pred[0] > 0.5:
                     print("FOUND A TUMOR HERE GUYS")

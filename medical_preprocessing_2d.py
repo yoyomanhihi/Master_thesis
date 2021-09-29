@@ -99,7 +99,7 @@ def isFullYellow(mask, y, x):
         return True
 
 
-def allFullYellow(mask, jump=4):
+def allFullYellow(mask, jump=1):
     ''' Return a list of coordonates of the image that are full yellow
         args:
             mask: the image with the segmented tumor

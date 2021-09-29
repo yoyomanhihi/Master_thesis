@@ -69,17 +69,17 @@ def isYellow(pixel):
 
 def crop(image_3d, z, y, x): #vertical, horizontal
     ''' Return a 32x32 image with top left corner of coordonate(y, x) '''
-    crop_img = image_3d[z:z + 32, y:y + 32, x:x + 32]
+    crop_img = image_3d[z:z + 8, y:y + 32, x:x + 32]
     return crop_img
 
 
 def isFullYellow(mask_3d, z, y, x):
     ''' Return True if the 4 corners of the 32x32 image are yellow '''
-    if isYellow(mask_3d[z, y, x]) and isYellow(mask_3d[z+32, y, x]) and isYellow(mask_3d[z, y+32, x]) and isYellow(mask_3d[z, y, x+32]) and isYellow(mask_3d[z+32, y+32, x]) and isYellow(mask_3d[z+32, y, x+32]) and isYellow(mask_3d[z, y+32, x+32]) and isYellow(mask_3d[z+32, y+32, x+32]):
+    if isYellow(mask_3d[z, y, x]) and isYellow(mask_3d[z+8, y, x]) and isYellow(mask_3d[z, y+32, x]) and isYellow(mask_3d[z, y, x+32]) and isYellow(mask_3d[z+8, y+32, x]) and isYellow(mask_3d[z+8, y, x+32]) and isYellow(mask_3d[z, y+32, x+32]) and isYellow(mask_3d[z+8, y+32, x+32]):
         return True
 
 
-def allFullYellow(mask_3d, slicesnbr, jump=20):
+def allFullYellow(mask_3d, slicesnbr, jump=2):
     ''' Return a list of coordonates of the image that are full yellow
         args:
             mask: the image with the segmented tumor
@@ -95,7 +95,7 @@ def allFullYellow(mask_3d, slicesnbr, jump=20):
 
 def isFullPurple(mask_3d, z, y, x):
     ''' Return True if the 4 corners of the 32x32 image are yellow '''
-    if not (isYellow(mask_3d[z, y, x]) or isYellow(mask_3d[z+32, y, x]) or isYellow(mask_3d[z, y+32, x]) or isYellow(mask_3d[z, y, x+32]) or isYellow(mask_3d[z+32, y+32, x]) or isYellow(mask_3d[z+32, y, x+32]) or isYellow(mask_3d[z, y+32, x+32]) or isYellow(mask_3d[z+32, y+32, x+32])):
+    if not (isYellow(mask_3d[z, y, x]) or isYellow(mask_3d[z+8, y, x]) or isYellow(mask_3d[z, y+32, x]) or isYellow(mask_3d[z, y, x+32]) or isYellow(mask_3d[z+8, y+32, x]) or isYellow(mask_3d[z+8, y, x+32]) or isYellow(mask_3d[z, y+32, x+32]) or isYellow(mask_3d[z+8, y+32, x+32])):
         return True
 
 
@@ -105,7 +105,7 @@ def allFullPurple(mask_3d, slicesnbr, jump=200):
             mask: the image with the segmented tumor
             jump: the jump in the range'''
     allcoords = []
-    for z in range(0, slicesnbr-32, jump):
+    for z in range(0, slicesnbr-8, jump):
         for y in range(0, 480, jump):
             for x in range(0, 480, jump):
                 if (isFullPurple(mask_3d, z, y, x)):
@@ -116,20 +116,21 @@ def allFullPurple(mask_3d, slicesnbr, jump=200):
 
 def isMostlyYellow(mask_3d, z, y, x):
     sub_image = crop(mask_3d, z, y, x)
-    return sub_image > 1003520 #(512*215 + 512*30) * 8
+    return np.sum(sub_image) > 1003520 #(512*215 + 512*30) * 8
 
 
-def allMostlyYellow(mask, jump=6):
+def allMostlyYellow(mask_3d, slicesnbr, jump=3):
     allcoords = []
-    for y in range(0, 480, jump):
-        for x in range(0, 480, jump):
-            if (isFullYellow(mask, y, x)):
-                allcoords.append((y, x))
+    for z in range(0, slicesnbr-8, jump):
+        for y in range(0, 480, jump):
+            for x in range(0, 480, jump):
+                if (isMostlyYellow(mask_3d, z, y, x)):
+                    allcoords.append((z, y, x))
     return allcoords
 
 
 
-def randomFullPurple(mask, slicesnbr, nbr = 20):
+def randomFullPurple(mask, slicesnbr, nbr = 1000):
     ''' Generate at most nbr random coordonates of full purple coordonates
         args:
             mask: the 512 x 512 mask of the segmentation
@@ -138,7 +139,7 @@ def randomFullPurple(mask, slicesnbr, nbr = 20):
             purples, the list of full purple pixels coordonates'''
     purples = []
     for i in range(nbr):
-        z = random.randint(0, slicesnbr - 33)
+        z = random.randint(0, slicesnbr - 9)
         y = random.randint(0, 479)
         x = random.randint(0, 479)
         if isFullPurple(mask, z, y, x):
@@ -146,7 +147,7 @@ def randomFullPurple(mask, slicesnbr, nbr = 20):
     return purples
 
 
-def prepareAllYellows(allyellows, image_3d, slice_thickness):
+def prepareAllYellows(allyellows, image_3d, z0, slice_thickness):
     ''' Prepare the data for all tumor subimages from one 2d image
         args:
             allyellows: list of top left corner pixels from image to select
@@ -156,16 +157,17 @@ def prepareAllYellows(allyellows, image_3d, slice_thickness):
     images_list = []
     for pixel in allyellows:
         flatten_subimage = crop(image_3d, pixel[0], pixel[1], pixel[2]).flatten()
-        flatten_subimage = np.append(flatten_subimage, pixel[0] * slice_thickness)
-        flatten_subimage = np.append(flatten_subimage, pixel[1])
-        flatten_subimage = np.append(flatten_subimage, pixel[2])
+        z = z0 + (pixel[0] * slice_thickness)
+        flatten_subimage = np.append(flatten_subimage, (z - MEANZ) / STDZ)
+        flatten_subimage = np.append(flatten_subimage, (pixel[1]-MEANXY)/STDXY)
+        flatten_subimage = np.append(flatten_subimage, (pixel[2]-MEANXY)/STDXY)
         images_list.append(flatten_subimage)
     labels_list = np.ones((len(allyellows),), dtype=int)
     data = list(zip(images_list, labels_list))
     return data
 
 
-def prepareAllPurples(allpurples, image_3d, slice_thickness):
+def prepareAllPurples(allpurples, image_3d, z0, slice_thickness):
     ''' Prepare the data for all non-tumor subimages from one 2d image
         args:
             allyellows: list of top left corner pixels from image to select
@@ -175,9 +177,10 @@ def prepareAllPurples(allpurples, image_3d, slice_thickness):
     images_list = []
     for pixel in allpurples:
         flatten_subimage = crop(image_3d, pixel[0], pixel[1], pixel[2]).flatten()
-        flatten_subimage = np.append(flatten_subimage, pixel[0] * slice_thickness)
-        flatten_subimage = np.append(flatten_subimage, pixel[1])
-        flatten_subimage = np.append(flatten_subimage, pixel[2])
+        z = z0 + (pixel[0] * slice_thickness)
+        flatten_subimage = np.append(flatten_subimage, (z - MEANZ) / STDZ)
+        flatten_subimage = np.append(flatten_subimage, (pixel[1]-MEANXY)/STDXY)
+        flatten_subimage = np.append(flatten_subimage, (pixel[2]-MEANXY)/STDXY)
         images_list.append(flatten_subimage)
     labels_list = np.zeros((len(allpurples),), dtype=int)
     data = list(zip(images_list, labels_list))
@@ -190,15 +193,24 @@ def sorted_alphanumeric(data):
     return sorted(data, key=alphanum_key)
 
 
-def getSliceThickness(dcm_path):
+def getZ(dcm_path):
+    """ Get the slice_thickness and the initial position of z in order to compute the z position
+        args:
+            dcm_path: path to the dcm files
+        return:
+            slice_thickness: the thickness between two slices
+    """
     slices = [dicom.dcmread(dcm_path + '/' + s) for s in os.listdir(dcm_path)[1:]]
     slices.sort(key=lambda x: float(x.ImagePositionPatient[2]))  # Sort by z axis
     print(dcm_path)
     try:
-        slice_thickness = np.abs(slices[0].ImagePositionPatient[2] - slices[1].ImagePositionPatient[2])
+        slice_thickness = slices[1].ImagePositionPatient[2] - slices[0].ImagePositionPatient[2]
+        Z0 = slices[0].ImagePositionPatient[2]
     except:
-        slice_thickness = np.abs(slices[0].SliceLocation - slices[1].SliceLocation)
-    return slice_thickness
+        slice_thickness = slices[1].SliceLocation - slices[0].SliceLocation
+        Z0 = slices[0].SliceLocation
+    return slice_thickness, Z0
+
 
 
 def generateDatasetFromOneClient(masks_path, images_path, dcm_path):
@@ -213,27 +225,29 @@ def generateDatasetFromOneClient(masks_path, images_path, dcm_path):
     dataset = []
     masks_files = sorted_alphanumeric(os.listdir(masks_path))
     print(masks_files)
-    slice_thickness = getSliceThickness(dcm_path)
+    slice_thickness, Z0 = getZ(dcm_path)
     slicesnbr = len(masks_files)
     print(slice_thickness)
     for i in range(len(masks_files)):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
-        mask = cv2.imread(mask_file)
+        mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
         mask_3d.append(mask)
 
         image_file = images_path + "/image_" + str(i) + ".png"
         image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
         image = image/255
+        image = image - MEAN
+        image = image / STD
         image_3d.append(image)
 
     mask_3d = np.array(mask_3d)
     image_3d = np.array(image_3d)
-    allyellows = allFullYellow(mask_3d, slicesnbr)
+    allyellows = allMostlyYellow(mask_3d, slicesnbr)
     allpurples = randomFullPurple(mask_3d, slicesnbr)
     print("yellows: " + str(len(allyellows)))
     print("purples: " + str(len(allpurples)))
-    dataset.extend(prepareAllYellows(allyellows, image_3d, slice_thickness))
-    dataset.extend(prepareAllPurples(allpurples, image_3d, slice_thickness))
+    dataset.extend(prepareAllYellows(allyellows, image_3d, Z0, slice_thickness))
+    dataset.extend(prepareAllPurples(allpurples, image_3d, Z0, slice_thickness))
     return dataset
 
 
@@ -274,19 +288,20 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
     dataset = []
     files = os.listdir(general_path)
     files.sort()
-    size = max(nbclients, len(files) - 1)
-    for f in files[1:size]:
-        newpath = general_path + "/" + f
-        images_path = newpath + "/images"
-        masks_path = newpath + "/masks"
-        dcm_file = os.listdir(newpath)[0]
-        dcm_path = newpath + "/" + dcm_file
-        dcm_files2 = os.listdir(dcm_path)
-        for dcm_file2 in dcm_files2:
-            dcm_path2 = dcm_path + "/" + dcm_file2
-            if len(os.listdir(dcm_path2)) > 5:
-                break
-        dataset.extend(generateDatasetFromOneClient(masks_path, images_path, dcm_path2))
+    size = min(nbclients, len(files) - 1)
+    for f in files[:size]:
+        if f != 'LICENSE':
+            newpath = general_path + "/" + f
+            images_path = newpath + "/images"
+            masks_path = newpath + "/masks"
+            dcm_file = os.listdir(newpath)[0]
+            dcm_path = newpath + "/" + dcm_file
+            dcm_files2 = os.listdir(dcm_path)
+            for dcm_file2 in dcm_files2:
+                dcm_path2 = dcm_path + "/" + dcm_file2
+                if len(os.listdir(dcm_path2)) > 5:
+                    break
+            dataset.extend(generateDatasetFromOneClient(masks_path, images_path, dcm_path2))
     return dataset
 
 def generateAndStore(name, nbclients):
