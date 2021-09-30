@@ -119,7 +119,7 @@ def isMostlyYellow(mask_3d, z, y, x):
     return np.sum(sub_image) > 1003520 #(512*215 + 512*30) * 8
 
 
-def allMostlyYellow(mask_3d, slicesnbr, jump=3):
+def allMostlyYellow(mask_3d, slicesnbr, jump=7):
     allcoords = []
     for z in range(0, slicesnbr-8, jump):
         for y in range(0, 480, jump):
@@ -130,7 +130,7 @@ def allMostlyYellow(mask_3d, slicesnbr, jump=3):
 
 
 
-def randomFullPurple(mask, slicesnbr, nbr = 1000):
+def randomFullPurple(mask, slicesnbr, nbr = 80):
     ''' Generate at most nbr random coordonates of full purple coordonates
         args:
             mask: the 512 x 512 mask of the segmentation
@@ -319,7 +319,7 @@ def generateAndStore(name, nbclients):
     return evaluation
 
 
-# generateAndStore('small_3d_dataset.pickle', 10)
+# generateAndStore('3d_dataset.pickle', 300)
 
 
 

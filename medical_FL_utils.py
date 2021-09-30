@@ -23,8 +23,8 @@ import seaborn
 np.set_printoptions(threshold=sys.maxsize)
 
 # Constantes utiles pour le whitening
-MEAN = 0.1766
-STD = 0.084
+MEAN = 0.1783
+STD = 0.0844
 MEANXY = 0.5
 STDXY = 0.28
 MEANZ = 870.6
@@ -65,6 +65,7 @@ def prepareTrainTest_2d(path):
         xy.append(elem[0][1026])
         z.append(elem[0][1024])
         # Add the inputs and outputs to the data
+        print(elem[0])
         inputs.append(elem[0])
         outputs.append(elem[1])
     xy = np.array(xy)
@@ -468,20 +469,22 @@ def segmentation_2d(model, client_path, img_nbr, title):
     image = image/255
     image = image-MEAN
     image = image/STD
-    for y in range(0, 480, 8):
+    for y in range(0, 480, 4):
         print("predicting line: " + str(y))
-        y_whitened = ((y/480)-MEANXY)/STDXY
-        for x in range(0, 480, 8):
-            x_whitened = ((x/480) - MEANXY) / STDXY
+        y_whitened = ((y-MEANXY)/STDXY)/480
+        for x in range(0, 480, 4):
+            x_whitened = ((x-MEANXY)/STDXY)/480
             flatten_subimage = crop_2d(image, y, x).flatten()
             flatten_subimage = np.append(flatten_subimage, z_whitened)
             flatten_subimage = np.append(flatten_subimage, y_whitened)
             flatten_subimage = np.append(flatten_subimage, x_whitened)
+            # print(flatten_subimage)
             reshaped = np.reshape(flatten_subimage, (1,1027))
             pred = model.predict(reshaped)
             if pred > 0.5:
                 print((pred, y, x))
             predictions[y:y + 32, x:x + 32] += pred[0]
+
     heatMap(predictions, title, img_nbr)
     return predictions
 

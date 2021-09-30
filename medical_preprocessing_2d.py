@@ -99,7 +99,7 @@ def isFullYellow(mask, y, x):
         return True
 
 
-def allFullYellow(mask, jump=1):
+def allFullYellow(mask, jump=2):
     ''' Return a list of coordonates of the image that are full yellow
         args:
             mask: the image with the segmented tumor
@@ -150,7 +150,7 @@ def allMostlyYellow(mask, jump=15):
     return allcoords
 
 
-def randomFullPurple(mask, nbr = 5):
+def randomFullPurple(mask, nbr = 4):
     ''' Generate at most nbr random coordonates of full purple coordonates
         args:
             mask: the 512 x 512 mask of the segmentation
@@ -335,5 +335,5 @@ def generateAndStore(name, nbclients):
 
 
 # getMeanAndStd(general_path, 20)
-# generateAndStore('2d_dataset_1.pickle', nbclients=300)
+# generateAndStore('2d_dataset.pickle', nbclients=300)
 
