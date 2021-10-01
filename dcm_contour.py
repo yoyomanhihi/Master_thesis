@@ -102,6 +102,7 @@ def coord2pixels(contour_dataset, path):
 
     # physical distance between the center of each pixel
     x_spacing, y_spacing = float(img.PixelSpacing[0]), float(img.PixelSpacing[1])
+    print(x_spacing, y_spacing)
 
     # this is the center of the upper left voxel
     origin_x, origin_y, _ = img.ImagePositionPatient

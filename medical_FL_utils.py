@@ -65,11 +65,12 @@ def prepareTrainTest_2d(path):
         xy.append(elem[0][1026])
         z.append(elem[0][1024])
         # Add the inputs and outputs to the data
-        print(elem[0])
         inputs.append(elem[0])
         outputs.append(elem[1])
     xy = np.array(xy)
     z = np.array(z)
+    print("mean xy: " + str(xy.mean()))
+    print("std xy: " + str(xy.std()))
     print("mean z: " + str(z.mean()))
     print("std z: " + str(z.std()))
     x_train = inputs[:train_size]
@@ -336,7 +337,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
+def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.001, comms_round = 100):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -469,10 +470,10 @@ def segmentation_2d(model, client_path, img_nbr, title):
     image = image/255
     image = image-MEAN
     image = image/STD
-    for y in range(0, 480, 4):
+    for y in range(0, 480, 8):
         print("predicting line: " + str(y))
         y_whitened = ((y-MEANXY)/STDXY)/480
-        for x in range(0, 480, 4):
+        for x in range(0, 480, 8):
             x_whitened = ((x-MEANXY)/STDXY)/480
             flatten_subimage = crop_2d(image, y, x).flatten()
             flatten_subimage = np.append(flatten_subimage, z_whitened)
@@ -484,7 +485,6 @@ def segmentation_2d(model, client_path, img_nbr, title):
             if pred > 0.5:
                 print((pred, y, x))
             predictions[y:y + 32, x:x + 32] += pred[0]
-
     heatMap(predictions, title, img_nbr)
     return predictions
 

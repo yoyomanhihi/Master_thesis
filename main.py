@@ -23,5 +23,5 @@ def main():
 
 # main()
 
-# med_SGD.make_all()
+med_SGD.make_all()
 # med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)

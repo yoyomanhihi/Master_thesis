@@ -32,7 +32,7 @@ def getMeanAndStd(general_path, nbclients):
             for i in range(len(images_files)):
                 image_file = images_path + "/image_" + str(i) + ".png"
                 image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
-                image = image / 255
+                image = image
                 allclients.extend(image)
     allclients = np.array(allclients)
     print("mean: " + str(allclients.mean()))

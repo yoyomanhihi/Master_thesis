@@ -37,7 +37,7 @@ def getMeanAndStd(general_path, nbclients):
             for i in range(len(images_files)):
                 image_file = images_path + "/image_" + str(i) + ".png"
                 image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
-                image = image / 255
+                image = image/255
                 allclients.extend(image)
     allclients = np.array(allclients)
     print("mean: " + str(allclients.mean()))
@@ -137,20 +137,30 @@ def isMostlyYellow(mask, y, x):
     return np.sum(sub_image) > 125440 #512*215 + 512*30
 
 
-def allMostlyYellow(mask, jump=15):
+def isMostlyPurple(mask, y, x):
+    sub_image = crop(mask, y, x)
+    somme = np.sum(sub_image)
+    return somme > 30720 and somme < 125440
+
+
+def allMostlyYellow(mask, jump=7):
     ''' Return a list of coordonates of the image that are more than 50% yellow
         args:
             mask: the image with the segmented tumor
             jump: the jump in the range'''
-    allcoords = []
+    mostly_yellows = []
+    mostly_purples= []
     for y in range(0, 480, jump):
         for x in range(0, 480, jump):
             if (isMostlyYellow(mask, y, x)):
-                allcoords.append((y, x))
-    return allcoords
+                mostly_yellows.append((y, x))
+            elif (isMostlyPurple(mask, y, x)):
+                if random.randint(0,3) == 0:
+                    mostly_purples.append((y, x))
+    return mostly_yellows, mostly_purples
 
 
-def randomFullPurple(mask, nbr = 4):
+def randomFullPurple(mask, nbr = 1):
     ''' Generate at most nbr random coordonates of full purple coordonates
         args:
             mask: the 512 x 512 mask of the segmentation
@@ -253,8 +263,8 @@ def generateDatasetFromOneClient(masks_path, images_path, dcm_path):
         image = image/255
         image = image-MEAN
         image = image/STD
-        allyellows = allFullYellow(mask)
-        allpurples = randomFullPurple(mask)
+        allyellows, allpurples = allMostlyYellow(mask)
+        allpurples.extend(randomFullPurple(mask))
         count0 += len(allpurples)
         count1 += len(allyellows)
         z = Z0 + i*slice_thickness
@@ -334,6 +344,6 @@ def generateAndStore(name, nbclients):
     return evaluation
 
 
-# getMeanAndStd(general_path, 20)
-# generateAndStore('2d_dataset.pickle', nbclients=300)
+# getMeanAndStd(general_path, 50)
+generateAndStore('2d_dataset_mostly_2.pickle', nbclients=300)
 
