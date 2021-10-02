@@ -345,5 +345,5 @@ def generateAndStore(name, nbclients):
 
 
 # getMeanAndStd(general_path, 50)
-generateAndStore('2d_dataset_mostly_2.pickle', nbclients=300)
+# generateAndStore('small_2d_dataset_2.pickle', nbclients=10)
 

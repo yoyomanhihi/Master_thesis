@@ -82,6 +82,31 @@ def prepareTrainTest_2d(path):
     return x_train, y_train, x_test, y_test
 
 
+def createClients(listdatasetspaths):
+    ''' Create dictionary with the clients and their data
+        args:
+            listdatasetspaths: list of paths to the different detasets
+        return:
+            clients: dictionary of the different clients and their data. The entries are of the form client_1, client_2 etc
+            x_test: test set data coming from the multiple clients
+            y_test: test set labels coming from the multiple clients'''
+    clients = {}
+    x_test = []
+    y_test = []
+    clientnbr = 0
+    for datasetpath in listdatasetspaths:
+        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest_2d(datasetpath)
+        clientname = "client_" + str(clientnbr)
+        data = list(zip(x_train_client, y_train_client))
+        random.shuffle(data)
+        clients[clientname] = data
+        x_test.extend(x_test_client)
+        y_test.extend(y_test_client)
+        clientnbr+=1
+    return clients, x_test, y_test
+
+
+
 def prepareTrainTest_3d(path):
     ''' Open the data and prepare it for ML
         args:
@@ -181,8 +206,6 @@ def test_model(x_test, y_test, model):
     for (X_test, Y_test) in test_batched:
         print("shape: " + str(np.shape(X_test)))
         predictions = model.predict(X_test)
-    print(predictions)
-    print(y_test)
     for i in range(len(predictions)):
         if predictions[i] > 0.5:
             predictions[i] = 1
@@ -229,6 +252,7 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test, lr = 0.01, comms_round = 100)
                     )
 
     SGD_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(len(y_train)).batch(320)
+    print(SGD_dataset)
     smlp_SGD = SimpleMLP()
     SGD_model = smlp_SGD.build(1027, 1)
 
@@ -242,6 +266,8 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test, lr = 0.01, comms_round = 100)
     #test the SGD global model and print out metrics
 
     SGD_acc = test_model(x_test, y_test, SGD_model)
+
+    print("FINAL ACCURACY: " + str(SGD_acc))
 
     return SGD_model
 
@@ -278,6 +304,8 @@ def simpleSGD_3d(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100)
     _ = SGD_model.fit(SGD_dataset, epochs=100, verbose=2)
 
     SGD_acc = test_model(X_test, y_test, SGD_model)
+
+    print("FINAL ACCURACY: " + str(SGD_acc))
 
     return SGD_model
 
@@ -337,7 +365,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.001, comms_round = 100):
+def fedAvg(clients, X_test, y_test, frac = 1, bs = 160, epo = 1, lr = 0.1, comms_round = 100):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -356,6 +384,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.001, comm
     clients_batched = dict()
     for (client_name, data) in clients.items():
         clients_batched[client_name] = batch_data(data, bs = bs)
+        print(clients_batched['client_1'])
 
     # process and batch the test set
     test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
@@ -375,6 +404,8 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.001, comm
 
     # commence global training loop
     for comm_round in range(comms_round):
+
+        print('comm_round: ' + str(comm_round))
 
         # get the global model's weights - will serve as the initial weights for all local models
         global_weights = global_model.get_weights()
@@ -409,6 +440,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.001, comm
             # clear session to free memory after each communication round
             K.clear_session()
 
+
         # to get the average over all the local model, we simply take the sum of the scaled weights
         average_weights = sum_scaled_weights(scaled_local_weight_list)
 
@@ -417,9 +449,13 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.001, comm
 
         # test global model and print out metrics after each communications round
         for (X_test, Y_test) in test_batched:
-            global_acc, global_loss = test_model(X_test, Y_test, global_model, comm_round)
+            global_acc = test_model(X_test, Y_test, global_model)
 
-    return global_acc
+        print('Accuracy after {} rounds = {}'.format(comm_round, global_acc))
+
+    print("FINAL ACCURACY: " + str(global_acc))
+
+    return global_model
 
 
 

@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import cv2
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph.opengl as gl
@@ -16,9 +15,6 @@ import pandas as pd
 from skimage import measure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from skimage.morphology import disk, opening, closing
-
-from IPython.display import HTML
-from PIL import Image
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)

@@ -8,9 +8,9 @@ import tensorflow as tf
 def make_all():
     client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-367'
 
-    # x_train, y_train, x_test, y_test = med_utils.prepareTrainTest_2d('2d_dataset_mostly.pickle')
+    x_train, y_train, x_test, y_test = med_utils.prepareTrainTest_2d('small_2d_dataset_1.pickle')
 
-    # model = med_utils.simpleSGD_2d(x_train, y_train, x_test, y_test)
+    model = med_utils.simpleSGD_2d(x_train, y_train, x_test, y_test)
 
     # model.save('2d_model_mostly.h5')
     #
@@ -29,4 +29,4 @@ def make_all():
 
     # return SGD_acc
 
-# make_all()
+make_all()

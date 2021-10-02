@@ -345,6 +345,6 @@ def create_image_mask_forall(general_path, index_name):
 #             im = cv2.imread(newpath3)
 #             print(im.shape)
 
-# create_image_mask_forall(general_path, 'GTV-1')
+create_image_mask_forall(general_path, 'GTV-1')
 
 
