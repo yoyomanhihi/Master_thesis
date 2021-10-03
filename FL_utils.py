@@ -422,6 +422,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 32, epo = 1, lr = 0.01, comms
 
     # process and batch the training data for each client
     clients_batched = dict()
+    print(clients['client_1'])
     for (client_name, data) in clients.items():
         clients_batched[client_name] = batch_data(data, bs = bs)
 

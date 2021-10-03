@@ -34,7 +34,7 @@ def simpleFedAvgTest(frac = 1, bs = 32, epo = 1, lr = 0.01, comms_round = 100):
                 comm_round: number of total communication rounds
     """
 
-    X_train, X_test, y_train, y_test = FL_utils.prepareTrainTest('trainingSet/trainingSet')
+    X_train, X_test, y_train, y_test = FL_utils.prepareTrainTest('trainingSample/trainingSample')
 
     # create clients
     clients = FL_utils.create_clients(X_train, y_train, num_clients=10)
@@ -80,5 +80,7 @@ def cross_val_fedAvg(splitter = 5, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_
         local_accuracy = FL_utils.fedAvg(clients, X_test, y_test, frac = frac, bs = bs, epo = epo, lr = lr, comms_round = comms_round)
         total_accuracy += local_accuracy
     return total_accuracy / splitter
+
+simpleFedAvgTest()
 
 

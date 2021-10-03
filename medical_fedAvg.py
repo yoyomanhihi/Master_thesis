@@ -1,8 +1,10 @@
 import medical_FL_utils as med_utils
 
 # datasetpath1 = '2d_dataset_1.pickle'
-datasetpath2 = 'small_2d_dataset_1.pickle'
-datasetpath3 = 'small_2d_dataset_2.pickle'
+datasetpath2 = '2d_dataset_mostly_2.pickle'
+datasetpath3 = '2d_dataset_mostly.pickle'
+# datasetpath2 = 'small_2d_dataset_1.pickle'
+# datasetpath3 = 'small_2d_dataset_2.pickle'
 listdatasetspaths = [datasetpath2, datasetpath3]
 
 clients, x_test, y_test = med_utils.createClients(listdatasetspaths)

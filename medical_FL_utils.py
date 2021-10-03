@@ -69,10 +69,10 @@ def prepareTrainTest_2d(path):
         outputs.append(elem[1])
     xy = np.array(xy)
     z = np.array(z)
-    print("mean xy: " + str(xy.mean()))
-    print("std xy: " + str(xy.std()))
-    print("mean z: " + str(z.mean()))
-    print("std z: " + str(z.std()))
+    # print("mean xy: " + str(xy.mean()))
+    # print("std xy: " + str(xy.std()))
+    # print("mean z: " + str(z.mean()))
+    # print("std z: " + str(z.std()))
     x_train = inputs[:train_size]
     y_train = outputs[:train_size]
     x_test = inputs[train_size:]
@@ -98,7 +98,6 @@ def createClients(listdatasetspaths):
         x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest_2d(datasetpath)
         clientname = "client_" + str(clientnbr)
         data = list(zip(x_train_client, y_train_client))
-        random.shuffle(data)
         clients[clientname] = data
         x_test.extend(x_test_client)
         y_test.extend(y_test_client)
@@ -365,7 +364,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(clients, X_test, y_test, frac = 1, bs = 160, epo = 1, lr = 0.1, comms_round = 100):
+def fedAvg(clients, X_test, y_test, frac = 1, bs = 160, epo = 1, lr = 0.01, comms_round = 100):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -384,13 +383,12 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 160, epo = 1, lr = 0.1, comms
     clients_batched = dict()
     for (client_name, data) in clients.items():
         clients_batched[client_name] = batch_data(data, bs = bs)
-        print(clients_batched['client_1'])
 
-    # process and batch the test set
+    # process and batch the test se
     test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
 
 
-    loss='categorical_crossentropy'
+    loss='binary_crossentropy'
     metrics = ['accuracy']
     optimizer = SGD(lr=lr,
                     decay=lr / comms_round,
@@ -401,6 +399,7 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 160, epo = 1, lr = 0.1, comms
     # initialize global model
     smlp_global = SimpleMLP()
     global_model = smlp_global.build(1027, 1)
+
 
     # commence global training loop
     for comm_round in range(comms_round):
