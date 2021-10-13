@@ -81,6 +81,6 @@ def cross_val_fedAvg(splitter = 5, frac = 1, bs = 32, epo = 1, lr = 0.01, comms_
         total_accuracy += local_accuracy
     return total_accuracy / splitter
 
-simpleFedAvgTest()
+# simpleFedAvgTest()
 
 

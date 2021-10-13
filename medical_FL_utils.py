@@ -1,3 +1,8 @@
+""" Federated learning code inspired by this tutorial:
+https://towardsdatascience.com/federated-learning-a-step-by-step-implementation-in-tensorflow-aac568283399
+"""
+
+
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,8 +28,8 @@ import seaborn
 np.set_printoptions(threshold=sys.maxsize)
 
 # Constantes utiles pour le whitening
-MEAN = 0.1783
-STD = 0.0844
+MEAN = -741.7384087183515
+STD = 432.83608694943786
 MEANXY = 0.5
 STDXY = 0.28
 MEANZ = 870.6
@@ -67,6 +72,7 @@ def prepareTrainTest_2d(path):
         # Add the inputs and outputs to the data
         inputs.append(elem[0])
         outputs.append(elem[1])
+    print(data[0][0])
     xy = np.array(xy)
     z = np.array(z)
     # print("mean xy: " + str(xy.mean()))
@@ -251,7 +257,6 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test, lr = 0.01, comms_round = 100)
                     )
 
     SGD_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(len(y_train)).batch(320)
-    print(SGD_dataset)
     smlp_SGD = SimpleMLP()
     SGD_model = smlp_SGD.build(1027, 1)
 
@@ -481,7 +486,7 @@ def heatMap(predictions, title, img_nbr):
 
 
 
-def segmentation_2d(model, client_path, img_nbr, title):
+def segmentation_2d(model, client_path, img_nbr, title, speed):
     ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
         args:
             model: model used for predictions
@@ -489,8 +494,8 @@ def segmentation_2d(model, client_path, img_nbr, title):
             img_nbr: number of the image from the patient to be segmented
         return:
             predictions: the 2d array with estimated probability of tumors'''
-    image_path = client_path + "/images/image_" + str(img_nbr) + ".png"
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    array_path = client_path + "/arrays/array_" + str(img_nbr) + ".npy"
+    array = np.load(array_path)
     dcm_file0 = os.listdir(client_path)[0]
     dcm_path0 = client_path + "/" + dcm_file0
     dcm_files = os.listdir(dcm_path0)
@@ -502,13 +507,13 @@ def segmentation_2d(model, client_path, img_nbr, title):
     z = Z0 + img_nbr*slice_thickness
     z_whitened = (z-MEANZ)/STDZ
     predictions = np.zeros((512, 512))
-    image = image/255
+    image = array
     image = image-MEAN
     image = image/STD
-    for y in range(0, 480, 8):
+    for y in range(0, 480, speed):
         print("predicting line: " + str(y))
         y_whitened = ((y-MEANXY)/STDXY)/480
-        for x in range(0, 480, 8):
+        for x in range(0, 480, speed):
             x_whitened = ((x-MEANXY)/STDXY)/480
             flatten_subimage = crop_2d(image, y, x).flatten()
             flatten_subimage = np.append(flatten_subimage, z_whitened)
@@ -535,9 +540,9 @@ def segmentation_3d(model, images_path):
     image_3d = []
     size = len(os.listdir(images_path))
     for i in range(size):
-        image_path = images_path + "/image_" + str(i) +".png"
-        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        image = image/255
+        array_path = images_path + "/array_" + str(i) +".npy"
+        array = np.load(array_path)
+        image = array
         image_3d.append(image)
     image_3d = np.array(image_3d)
     depth = len(image_3d)

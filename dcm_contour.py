@@ -6,7 +6,6 @@ import pydicom as dicom
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
-from PIL import Image
 import operator
 import os
 import cv2
@@ -102,7 +101,7 @@ def coord2pixels(contour_dataset, path):
 
     # physical distance between the center of each pixel
     x_spacing, y_spacing = float(img.PixelSpacing[0]), float(img.PixelSpacing[1])
-    print(x_spacing, y_spacing)
+    # print(x_spacing, y_spacing)
 
     # this is the center of the upper left voxel
     origin_x, origin_y, _ = img.ImagePositionPatient
@@ -291,9 +290,6 @@ def create_image_mask_files(path, index_name, img_format='png'):
     # Extract Arrays from DICOM
     index = get_index(path, index_name)
     X, Y = get_data(path, index)
-    for slice in X:
-        slice[0][0] = 3100
-        slice[511, 511] = -1025
     # X = np.clip(X, -600, 400)
     Y = np.array([dcm_contour.fill_contour(y) if y.max() == 1 else y for y in Y])
     # Create images and masks folders
@@ -302,13 +298,19 @@ def create_image_mask_files(path, index_name, img_format='png'):
     if os.path.exists(images_dir):
         shutil.rmtree(images_dir)
     os.makedirs(images_dir)
-    masks_dir = new_path + '/masks/'
+    masks_dir = new_path + '/masks_Lung_Left/'
     if os.path.exists(masks_dir):
         shutil.rmtree(masks_dir)
     os.makedirs(masks_dir)
     for i in range(len(X)):
         plt.imsave(new_path + f'/images/image_{i}.{img_format}', X[i, :, :])
-        plt.imsave(new_path + f'/masks/mask_{i}.{img_format}', Y[i, :, :])
+        # arr = X[i, :, :]
+        # array_buffer = arr.tobytes()
+        # img = Image.new("I", arr.T.shape)
+        # img.frombytes(array_buffer, 'raw', "I;16")
+        # img.save(new_path + f'/images/image_{i}.{img_format}')
+        plt.imsave(new_path + f'/masks/mask_{i}.png', Y[i, :, :])
+
 
 
 def create_image_mask_forall(general_path, index_name):
@@ -323,7 +325,7 @@ def create_image_mask_forall(general_path, index_name):
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
             for f2 in newfiles:
-                if f2 != 'images' and f2 != 'masks':
+                if f2 != 'images' and f2 != 'masks' and f2 != 'masks_Lung_Left':
                     newpath2 = newpath + "/" + f2
                     newfiles2 = os.listdir(newpath2)
                     for f3 in newfiles2:
@@ -331,6 +333,101 @@ def create_image_mask_forall(general_path, index_name):
                         newfiles3 = os.listdir(newpath3)
                         if len(newfiles3) > 5:
                             create_image_mask_files(newpath3, index_name, img_format='png')
+
+
+
+
+def create_mask_files_only(path, index_name, img_format='png'):
+    """
+    Create image and corresponding mask files under to folders '/images' and '/masks'
+    in the parent directory of path.
+    Inputs:
+        path (str): path of the the directory that has DICOM files in it, e.g. folder of a single patient
+        index (int): index of the desired ROISequence
+        img_format (str): image format to save by, png by default
+    """
+    # Extract Arrays from DICOM
+    index = get_index(path, index_name)
+    X, Y = get_data(path, index)
+    Y = np.array([dcm_contour.fill_contour(y) if y.max() == 1 else y for y in Y])
+    # Create images and masks folders
+    new_path = '/'.join(path.split('/')[:-2])
+    masks_dir = new_path + '/masks_Lung_Left/'
+    if os.path.exists(masks_dir):
+        shutil.rmtree(masks_dir)
+    os.makedirs(masks_dir)
+    for i in range(len(X)):
+        plt.imsave(new_path + f'/masks_Lung_Left/mask_{i}.{img_format}', Y[i, :, :])
+
+
+
+def create_mask_only_forall(general_path, index_name):
+    """ Create images and masks folders for every patient
+        args:
+            general_path: path to the folder including all patients
+            index_name: name of the index to be segmented in the masks folder
+    """
+    patients_folders = os.listdir(general_path)
+    for folder in patients_folders:
+        newpath = general_path + "/" + folder
+        if(os.path.isdir(newpath)):
+            newfiles = os.listdir(newpath)
+            for f2 in newfiles:
+                if f2 != 'images' and f2 != 'masks' and f2 != 'masks_Lung_Left':
+                    newpath2 = newpath + "/" + f2
+                    newfiles2 = os.listdir(newpath2)
+                    for f3 in newfiles2:
+                        newpath3 = newpath2 + "/" + f3
+                        newfiles3 = os.listdir(newpath3)
+                        if len(newfiles3) > 5:
+                            create_mask_files_only(newpath3, index_name, img_format='png')
+
+
+
+def store_array(path, index_name):
+    """
+    Create image and corresponding mask files under to folders '/images' and '/masks'
+    in the parent directory of path.
+    Inputs:
+        path (str): path of the the directory that has DICOM files in it, e.g. folder of a single patient
+        index (int): index of the desired ROISequence
+        img_format (str): image format to save by, png by default
+    """
+    # Extract Arrays from DICOM
+    index = get_index(path, index_name)
+    X, _ = get_data(path, index)
+    # Create images and masks folders
+    new_path = '/'.join(path.split('/')[:-2])
+    masks_dir = new_path + '/arrays/'
+    if os.path.exists(masks_dir):
+        shutil.rmtree(masks_dir)
+    os.makedirs(masks_dir)
+    for i in range(len(X)):
+        np.save(new_path + f'/arrays/array_{i}', X[i, :, :])
+
+
+
+def store_array_forall(general_path, index_name):
+    """ Create images and masks folders for every patient
+        args:
+            general_path: path to the folder including all patients
+            index_name: name of the index to be segmented in the masks folder
+    """
+    patients_folders = os.listdir(general_path)
+    for folder in patients_folders:
+        newpath = general_path + "/" + folder
+        if(os.path.isdir(newpath)):
+            newfiles = os.listdir(newpath)
+            for f2 in newfiles:
+                if f2 != 'images' and f2 != 'masks' and f2 != 'masks_Lung_Left' and f2 != 'arrays':
+                    newpath2 = newpath + "/" + f2
+                    newfiles2 = os.listdir(newpath2)
+                    for f3 in newfiles2:
+                        newpath3 = newpath2 + "/" + f3
+                        newfiles3 = os.listdir(newpath3)
+                        if len(newfiles3) > 5:
+                            store_array(newpath3, index_name)
+
 
 
 # def print_shapes(general_path):
@@ -345,6 +442,7 @@ def create_image_mask_forall(general_path, index_name):
 #             im = cv2.imread(newpath3)
 #             print(im.shape)
 
-create_image_mask_forall(general_path, 'GTV-1')
+# create_image_mask_forall(general_path, 'Spinal-Cord')
+# store_array_forall(general_path, 'GTV-1')
 
 

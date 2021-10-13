@@ -11,8 +11,8 @@ import pydicom as dicom
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 # general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
 
-MEAN = 0.1783
-STD = 0.0844
+MEAN = -741.7384087183515
+STD = 432.83608694943786
 MEANXY = 0.5
 STDXY = 0.28
 MEANZ = 870.6
@@ -32,30 +32,29 @@ def getMeanAndStd(general_path, nbclients):
     for f in files[:nbclients]:
         if f != 'LICENSE':
             newpath = general_path + "/" + f
-            images_path = newpath + "/images"
-            images_files = os.listdir(images_path)
-            for i in range(len(images_files)):
-                image_file = images_path + "/image_" + str(i) + ".png"
-                image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
-                image = image/255
-                allclients.extend(image)
+            arrays_path = newpath + "/arrays"
+            arrays_files = os.listdir(arrays_path)
+            for i in range(len(arrays_files)):
+                array_file = arrays_path + "/array_" + str(i) + ".npy"
+                arr = np.load(array_file)
+                allclients.extend(arr)
     allclients = np.array(allclients)
     print("mean: " + str(allclients.mean()))
     print("std: " + str(allclients.std()))
 
 
 
-def generateImagesPath(general_path, client_nbr):
-    """ Generate path to the images of the client
+def generateArraysPath(general_path, client_nbr):
+    """ Generate path to the arrays of the client
         args:
             general_path: path to all clients
             client_nbr: number of the client from which we want the path
         return:
-            path to the images of the client
+            path to the arrays of the client
     """
     file = os.listdir(general_path)[client_nbr+1]
     path = general_path + "/" + file
-    return path + "/images"
+    return path + "/arrays"
 
 
 def generateMasksPath(general_path, client_nbr):
@@ -70,15 +69,8 @@ def generateMasksPath(general_path, client_nbr):
     path = general_path + "/" + file
     return path + "/masks"
 
-images_path = generateImagesPath(general_path, 0)
+arrays_path = generateArraysPath(general_path, 0)
 masks_path = generateMasksPath(general_path, 0)
-
-
-def displayImage(image):
-    """ Display the 2d image"""
-    cv2.imshow('Window name', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 
 def isYellow(pixel): #yellow = 215, purple = 30
@@ -94,15 +86,15 @@ def crop(image, y, x): #vertical, horizontal
 
 
 def isFullYellow(mask, y, x):
-    ''' Return True if the 4 corners of the 32x32 image are yellow '''
+    ''' Return True if the 4 corners of the 32x32 mask are yellow '''
     if isYellow(mask[y, x]) and isYellow(mask[y + 32, x]) and isYellow(mask[y, x + 32]) and isYellow(mask[y + 32, x + 32]):
         return True
 
 
 def allFullYellow(mask, jump=2):
-    ''' Return a list of coordonates of the image that are full yellow
+    ''' Return a list of coordonates of the mask that are full yellow
         args:
-            mask: the image with the segmented tumor
+            mask: the mask with the segmented tumor
             jump: the jump in the range'''
     allcoords = []
     for y in range(0, 480, jump):
@@ -113,15 +105,15 @@ def allFullYellow(mask, jump=2):
 
 
 def isFullPurple(mask, y, x):
-    ''' Return True if the 4 corners of the 32x32 image are purple '''
+    ''' Return True if the 4 corners of the 32x32 mask are purple '''
     if not (isYellow(mask[y, x]) or isYellow(mask[y + 32, x]) or isYellow(mask[y, x + 32]) or isYellow(mask[y + 32, x + 32])):
         return True
 
 
 def allFullPurple(mask, jump=200):
-    ''' Return a list of coordonates of the image that are full purple
+    ''' Return a list of coordonates of mask that are full purple
         args:
-            mask: the image with the segmented tumor
+            mask: the mask with the segmented tumor
             jump: the jump in the range'''
     allcoords = []
     for y in range(0, 480, jump):
@@ -132,21 +124,21 @@ def allFullPurple(mask, jump=200):
 
 
 def isMostlyYellow(mask, y, x):
-    ''' Return True if more than 50% of the 32x32 image is yellow '''
-    sub_image = crop(mask, y, x)
-    return np.sum(sub_image) > 125440 #512*215 + 512*30
+    ''' Return True if more than 50% of the 32x32 mask is yellow '''
+    sub_mask = crop(mask, y, x)
+    return np.sum(sub_mask) > 125440 #512*215 + 512*30
 
 
 def isMostlyPurple(mask, y, x):
-    sub_image = crop(mask, y, x)
-    somme = np.sum(sub_image)
+    sub_mask = crop(mask, y, x)
+    somme = np.sum(sub_mask)
     return somme > 30720 and somme < 125440
 
 
 def allMostlyYellow(mask, jump=7):
-    ''' Return a list of coordonates of the image that are more than 50% yellow
+    ''' Return a list of coordonates of the mask that are more than 50% yellow
         args:
-            mask: the image with the segmented tumor
+            mask: the mask with the segmented tumor
             jump: the jump in the range'''
     mostly_yellows = []
     mostly_purples= []
@@ -160,7 +152,7 @@ def allMostlyYellow(mask, jump=7):
     return mostly_yellows, mostly_purples
 
 
-def randomFullPurple(mask, nbr = 1):
+def randomFullPurple(mask, nbr = 2):
     ''' Generate at most nbr random coordonates of full purple coordonates
         args:
             mask: the 512 x 512 mask of the segmentation
@@ -222,7 +214,6 @@ def sorted_alphanumeric(data):
     return sorted(data, key=alphanum_key)
 
 
-
 def getZ(dcm_path):
     """ Get the slice_thickness and the initial position of z in order to compute the z position
         args:
@@ -243,11 +234,11 @@ def getZ(dcm_path):
 
 
 
-def generateDatasetFromOneClient(masks_path, images_path, dcm_path):
+def generateDatasetFromOneClient(masks_path, arrays_path, dcm_path):
     ''' Generate the full 2d dataset from one client
         args:
             masks_path: directory path to all the masks of the client
-            images_path: directory path to all images of the client
+            arrays_path: directory path to all images of the client
         returns:
             dataset: the full dataset of the client'''
     dataset = []
@@ -258,12 +249,13 @@ def generateDatasetFromOneClient(masks_path, images_path, dcm_path):
     for i in range(len(masks_files)):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-        image_file = images_path + "/image_" + str(i) + ".png"
-        image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
-        image = image/255
+        array_file = arrays_path + "/array_" + str(i) + ".npy"
+        image = np.load(array_file)
         image = image-MEAN
         image = image/STD
-        allyellows, allpurples = allMostlyYellow(mask)
+        # allyellows, allpurples = allMostlyYellow(mask) #CHECK
+        allpurples = randomFullPurple(mask)
+        allyellows = allFullYellow(mask)
         allpurples.extend(randomFullPurple(mask))
         count0 += len(allpurples)
         count1 += len(allyellows)
@@ -316,7 +308,7 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
     for f in files[:size]:
         if f != 'LICENSE':
             newpath = general_path + "/" + f
-            images_path = newpath + "/images"
+            arrays_path = newpath + "/arrays"
             masks_path = newpath + "/masks"
             dcm_file = os.listdir(newpath)[0]
             dcm_path = newpath + "/" + dcm_file
@@ -325,7 +317,7 @@ def generateDatasetFromManyClients(general_path, nbclients = 300):
                 dcm_path2 = dcm_path + "/" + dcm_file2
                 if len(os.listdir(dcm_path2)) > 5:
                     break
-            dataset.extend(generateDatasetFromOneClient(masks_path, images_path, dcm_path2))
+            dataset.extend(generateDatasetFromOneClient(masks_path, arrays_path, dcm_path2))
     return dataset
 
 
@@ -345,5 +337,5 @@ def generateAndStore(name, nbclients):
 
 
 # getMeanAndStd(general_path, 50)
-# generateAndStore('small_2d_dataset_2.pickle', nbclients=10)
+# generateAndStore('2d_dataset.pickle', nbclients=300)
 
