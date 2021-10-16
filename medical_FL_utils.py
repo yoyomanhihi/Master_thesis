@@ -10,13 +10,14 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Activation
+from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import MaxPooling2D
+from tensorflow.keras.layers import Dropout
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.optimizers import SGD
 from sklearn.preprocessing import LabelBinarizer
-import medical_preprocessing_2d as med_prep_2d
-import medical_preprocessing_3d as med_prep_3d
 import pydicom as dicom
 import sys
 import cv2
@@ -44,7 +45,7 @@ def load(path):
 
 
 
-def prepareTrainTest_2d(path):
+def prepareTrainTest_2d(path, strategy):
     ''' Open the data and prepare it for ML
         args:
             path: path to the file where the data is stored
@@ -64,27 +65,30 @@ def prepareTrainTest_2d(path):
     z = []
     for elem in data:
         # Set the coordonates of the image between 0 and 1
-        elem[0][1025] = elem[0][1025]/480
-        elem[0][1026] = elem[0][1026]/480
-        xy.append(elem[0][1025])
-        xy.append(elem[0][1026])
-        z.append(elem[0][1024])
+        if strategy == "dense":
+            elem[0][1025] = elem[0][1025]/480
+            elem[0][1026] = elem[0][1026]/480
+            xy.append(elem[0][1025])
+            xy.append(elem[0][1026])
+            z.append(elem[0][1024])
         # Add the inputs and outputs to the data
         inputs.append(elem[0])
         outputs.append(elem[1])
-    print(data[0][0])
     xy = np.array(xy)
     z = np.array(z)
     # print("mean xy: " + str(xy.mean()))
     # print("std xy: " + str(xy.std()))
     # print("mean z: " + str(z.mean()))
     # print("std z: " + str(z.std()))
+    outputs = np.asarray(outputs).astype('float32').reshape((-1, 1))
+    print(np.shape(inputs))
+    if strategy == "cnn":
+        inputs = np.reshape(inputs, (len(inputs), 32, 32, 1))
+        print(np.shape(inputs))
     x_train = inputs[:train_size]
     y_train = outputs[:train_size]
     x_test = inputs[train_size:]
     y_test = outputs[train_size:]
-    y_train = np.asarray(y_train).astype('float32').reshape((-1, 1))
-    y_test = np.asarray(y_test).astype('float32').reshape((-1, 1))
     return x_train, y_train, x_test, y_test
 
 
@@ -181,6 +185,34 @@ class SimpleMLP:
         return model
 
 
+class SimpleCNN:
+    @staticmethod
+    def build(shape, classes):
+        ##model building
+        model = Sequential()
+        # convolutional layer with rectified linear unit activation
+        model.add(Conv2D(32, kernel_size=(3, 3),
+                         activation='relu',
+                         input_shape=shape))
+        # 32 convolution filters used each of size 3x3
+        # again
+        model.add(Conv2D(64, (3, 3), activation='relu'))
+        # 64 convolution filters used each of size 3x3
+        # choose the best features via pooling
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        # randomly turn neurons on and off to improve convergence
+        model.add(Dropout(0.25))
+        # flatten since too many dimensions, we only want a classification output
+        model.add(Flatten())
+        # fully connected to get all relevant data
+        model.add(Dense(128, activation='relu'))
+        # one more dropout for convergence' sake :)
+        model.add(Dropout(0.5))
+        # output a softmax to squash the matrix into output probabilities
+        model.add(Dense(classes, activation='sigmoid')),
+        return model
+
+
 def bcr(TP, FP, TN, FN):
     ''' Compute the bcr score of the model
         args:
@@ -236,7 +268,7 @@ def test_model(x_test, y_test, model):
     return acc
 
 
-def simpleSGD_2d(x_train, y_train, x_test, y_test, lr = 0.01, comms_round = 100):
+def simpleSGD_2d(x_train, y_train, x_test, y_test, strategy = "dense", lr = 0.01, comms_round = 100):
     ''' Simple SGD algorithm for 32x32 images
         args:
             x_train: training images
@@ -255,10 +287,13 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test, lr = 0.01, comms_round = 100)
                     decay=lr / comms_round,
                     momentum=0.9
                     )
-
     SGD_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(len(y_train)).batch(320)
-    smlp_SGD = SimpleMLP()
-    SGD_model = smlp_SGD.build(1027, 1)
+    if strategy == "dense":
+        smlp_SGD = SimpleMLP()
+        SGD_model = smlp_SGD.build(1027, 1)
+    elif strategy == "cnn":
+        smlp_SGD = SimpleCNN()
+        SGD_model = smlp_SGD.build((32, 32, 1), 1)
 
     SGD_model.compile(loss=loss,
                   optimizer=optimizer,

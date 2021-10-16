@@ -384,7 +384,7 @@ def simpleSGD(X_train, y_train, X_test, y_test, lr = 0.01, comms_round = 100):
                     momentum=0.9
                     )
 
-    SGD_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(len(y_train)).batch(320)
+    SGD_dataset = tf.data.Dataset.tensor_slices((X_train, y_train)).shuffle(len(y_train)).batch(320)
     print("dataset shape: " + str(np.shape(SGD_dataset)))
     smlp_SGD = SimpleMLP()
     # SGD_model = smlp_SGD.build(784, 10)

@@ -2,7 +2,6 @@ import cv2
 import sys
 import numpy as np
 import os
-from tensorflow.keras.layers import Flatten
 import pickle
 import re
 import random
@@ -152,7 +151,7 @@ def allMostlyYellow(mask, jump=7):
     return mostly_yellows, mostly_purples
 
 
-def randomFullPurple(mask, nbr = 2): #CHECK
+def randomFullPurple(mask, nbr = 4): #CHECK
     ''' Generate at most nbr random coordonates of full purple coordonates
         args:
             mask: the 512 x 512 mask of the segmentation
@@ -177,11 +176,8 @@ def prepareAllYellows(allyellows, image, z):
             data: the list of subimages + label to add to the dataset'''
     images_list = []
     for pixel in allyellows:
-        flatten_subimage = crop(image, pixel[0], pixel[1]).flatten()
-        flatten_subimage = np.append(flatten_subimage, (z - MEANZ) / STDZ)
-        flatten_subimage = np.append(flatten_subimage, (pixel[0]-MEANXY)/STDXY)
-        flatten_subimage = np.append(flatten_subimage, (pixel[1]-MEANXY)/STDXY)
-        images_list.append(flatten_subimage)
+        subimage = crop(image, pixel[0], pixel[1])
+        images_list.append(subimage)
     labels_list = np.ones((len(allyellows),), dtype=int)
     data = list(zip(images_list, labels_list))
     return data
@@ -196,11 +192,8 @@ def prepareAllPurples(allpurples, image, z):
             data: the list of subimages + label to add to the dataset'''
     images_list = []
     for pixel in allpurples:
-        flatten_subimage = crop(image, pixel[0], pixel[1]).flatten()
-        flatten_subimage = np.append(flatten_subimage, (z - MEANZ) / STDZ)
-        flatten_subimage = np.append(flatten_subimage, (pixel[0]-MEANXY)/STDXY)
-        flatten_subimage = np.append(flatten_subimage, (pixel[1]-MEANXY)/STDXY)
-        images_list.append(flatten_subimage)
+        subimage = crop(image, pixel[0], pixel[1])
+        images_list.append(subimage)
     labels_list = np.zeros((len(allpurples),), dtype=int)
     data = list(zip(images_list, labels_list))
     return data
@@ -253,10 +246,10 @@ def generateDatasetFromOneClient(masks_path, arrays_path, dcm_path):
         image = np.load(array_file)
         image = image-MEAN
         image = image/STD
-        allyellows, allpurples = allMostlyYellow(mask) #CHECK
-        # allpurples = randomFullPurple(mask)
-        # allyellows = allFullYellow(mask)
-        allpurples.extend(randomFullPurple(mask))
+        # allyellows, allpurples = allMostlyYellow(mask) #CHECK
+        allpurples = randomFullPurple(mask)
+        allyellows = allFullYellow(mask)
+        # allpurples.extend(randomFullPurple(mask))
         count0 += len(allpurples)
         count1 += len(allyellows)
         z = Z0 + i*slice_thickness
@@ -337,5 +330,5 @@ def generateAndStore(name, nbclients):
 
 
 # getMeanAndStd(general_path, 50)
-# generateAndStore('2d_dataset_mostly.pickle', nbclients=300)
+generateAndStore('2d_dataset_cnn.pickle', nbclients=150)
 
