@@ -25,6 +25,7 @@ import os
 import random
 import time
 import seaborn
+import dcm_contour
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -506,10 +507,10 @@ def crop_2d(image, y, x): #vertical, horizontal
 
 
 
-def heatMap(predictions, title, img_nbr):
+def heatMap(predictions, img_nbr, strategy):
     """ Plot the heat map of the tumor predictions"""
     fig, ax = plt.subplots()
-    title = title + str(img_nbr)
+    title = str(strategy) + " model on image: " + str(img_nbr)
     plt.title(title, fontsize=18)
     ttl = ax.title
     ttl.set_position([0.5, 1.05])
@@ -521,7 +522,7 @@ def heatMap(predictions, title, img_nbr):
 
 
 
-def segmentation_2d(model, client_path, img_nbr, title, speed):
+def segmentation_2d(model, client_path, img_nbr, speed, strategy):
     ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
         args:
             model: model used for predictions
@@ -529,8 +530,11 @@ def segmentation_2d(model, client_path, img_nbr, title, speed):
             img_nbr: number of the image from the patient to be segmented
         return:
             predictions: the 2d array with estimated probability of tumors'''
+    # dcm_path =
     array_path = client_path + "/arrays/array_" + str(img_nbr) + ".npy"
     array = np.load(array_path)
+    plt.imshow(array, interpolation='nearest')
+    plt.show()
     dcm_file0 = os.listdir(client_path)[0]
     dcm_path0 = client_path + "/" + dcm_file0
     dcm_files = os.listdir(dcm_path0)
@@ -538,29 +542,33 @@ def segmentation_2d(model, client_path, img_nbr, title, speed):
         dcm_path = dcm_path0 + "/" + file
         if len(os.listdir(dcm_path)) > 5:
             break
-    slice_thickness, Z0 = getZ(dcm_path)
-    z = Z0 + img_nbr*slice_thickness
-    z_whitened = (z-MEANZ)/STDZ
     predictions = np.zeros((512, 512))
+    slice_thickness, Z0 = getZ(dcm_path)
     image = array
     image = image-MEAN
     image = image/STD
+    z = Z0 + img_nbr * slice_thickness
+    z_whitened = (z - MEANZ) / STDZ
     for y in range(0, 480, speed):
         print("predicting line: " + str(y))
         y_whitened = ((y-MEANXY)/STDXY)/480
         for x in range(0, 480, speed):
             x_whitened = ((x-MEANXY)/STDXY)/480
-            flatten_subimage = crop_2d(image, y, x).flatten()
-            flatten_subimage = np.append(flatten_subimage, z_whitened)
-            flatten_subimage = np.append(flatten_subimage, y_whitened)
-            flatten_subimage = np.append(flatten_subimage, x_whitened)
-            # print(flatten_subimage)
-            reshaped = np.reshape(flatten_subimage, (1,1027))
+            if strategy == "dense":
+                flatten_subimage = crop_2d(image, y, x).flatten()
+                flatten_subimage = np.append(flatten_subimage, z_whitened)
+                flatten_subimage = np.append(flatten_subimage, y_whitened)
+                flatten_subimage = np.append(flatten_subimage, x_whitened)
+                # print(flatten_subimage)
+                reshaped = np.reshape(flatten_subimage, (1,1027))
+            elif strategy == "cnn":
+                subimage = crop_2d(image, y, x)
+                reshaped = np.reshape(subimage, (1, 32, 32, 1))
             pred = model.predict(reshaped)
             if pred > 0.5:
                 print((pred, y, x))
             predictions[y:y + 32, x:x + 32] += pred[0]
-    heatMap(predictions, title, img_nbr)
+    heatMap(predictions, img_nbr, strategy)
     return predictions
 
 
