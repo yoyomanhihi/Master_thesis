@@ -69,6 +69,8 @@ def generateMasksPath(general_path, client_nbr):
     path = general_path + "/" + file
     return path + "/masks"
 
+
+
 arrays_path = generateArraysPath(general_path, 0)
 masks_path = generateMasksPath(general_path, 0)
 

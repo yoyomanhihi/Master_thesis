@@ -12,7 +12,7 @@ import cv2
 import shutil
 import scipy.misc
 
-image_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
+dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
 contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 
@@ -21,7 +21,7 @@ contour_data = dicom.read_file(contour_path)
 print(dcm_contour.get_roi_names(contour_data))
 
 
-def plot2dcontour(img_arr, contour_arr, figsize=(20, 20)):
+def plot2dcontour(img_arr, contour_arr, img_nbr, figsize=(20, 20)):
     """
     Shows 2d MR img with contour
     Inputs
@@ -30,12 +30,14 @@ def plot2dcontour(img_arr, contour_arr, figsize=(20, 20)):
     """
 
     masked_contour_arr = np.ma.masked_where(contour_arr == 0, contour_arr)
-    plt.figure(figsize=figsize)
+    # plt.figure(figsize=figsize)
     # plt.subplot(1, 2, 1)
-    # plt.imshow(img_arr, cmap='gray', interpolation='none')
-    # plt.subplot(1, 2, 2)
+    title = "tumor zone image " + str(img_nbr)
+    plt.title(title, fontsize=18)
     plt.imshow(img_arr, cmap='gray', interpolation='none')
-    # plt.imshow(masked_contour_arr, cmap='cool', interpolation='none', alpha=0.7)
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(img_arr, cmap='gray', interpolation='none')
+    plt.imshow(masked_contour_arr, cmap='cool', interpolation='none', alpha=0.7)
     plt.show()
 
 
@@ -186,7 +188,7 @@ def get_contour_dict(contour_file, path, index):
 
 
 # get all image-contour array pairs
-contour_arrays = cfile2pixels(file="1-1.dcm", path=image_path, ROIContourSeq=0)
+contour_arrays = cfile2pixels(file="1-1.dcm", path=dcm_path, ROIContourSeq=0)
 
 # get first image - contour array
 first_image, first_contour, img_id = contour_arrays[4]
@@ -227,7 +229,7 @@ def slice_order(path):
 
 
 # ordered files
-ordered_slices = slice_order(image_path)
+ordered_slices = slice_order(dcm_path)
 
 def get_data(path, index):
     """
@@ -266,16 +268,16 @@ def get_data(path, index):
     return np.array(images), np.array(contours)
 
 
-images, contours = get_data(image_path, index=0)
-
-
-for img_arr, contour_arr in zip(images[79:80], contours[79:80]):
-    plot2dcontour(img_arr, contour_arr)
-
-cntr = contours[80]
-plt.imshow(cntr)
-
-plt.show()
+# images, contours = get_data(dcm_path, index=0) #CHECK
+#
+#
+# for img_arr, contour_arr in zip(images[79:80], contours[79:80]):
+#     plot2dcontour(img_arr, contour_arr)
+#
+# cntr = contours[80]
+# plt.imshow(cntr)
+#
+# plt.show()
 
 def get_index(dcm_path, index_name):
     """ Return the index number corresponding to the index name, in the ROI sequence of the patient

@@ -93,6 +93,7 @@ def prepareTrainTest_2d(path, strategy):
     return x_train, y_train, x_test, y_test
 
 
+
 def createClients(listdatasetspaths):
     ''' Create dictionary with the clients and their data
         args:
@@ -500,6 +501,17 @@ def fedAvg(clients, X_test, y_test, frac = 1, bs = 160, epo = 1, lr = 0.01, comm
 
 
 
+def get_dcm_path(client_path):
+    dcm_file = os.listdir(client_path)[0]
+    dcm_path = client_path + "/" + dcm_file
+    dcm_files2 = os.listdir(dcm_path)
+    for dcm_file2 in dcm_files2:
+        dcm_path2 = dcm_path + "/" + dcm_file2
+        if len(os.listdir(dcm_path2)) > 5:
+            break
+    return dcm_path2
+
+
 def crop_2d(image, y, x): #vertical, horizontal
     ''' Return a 32x32 image with top left corner of coordonate(y, x)'''
     crop_img = image[y:y + 32, x:x + 32]
@@ -530,11 +542,8 @@ def segmentation_2d(model, client_path, img_nbr, speed, strategy):
             img_nbr: number of the image from the patient to be segmented
         return:
             predictions: the 2d array with estimated probability of tumors'''
-    # dcm_path =
     array_path = client_path + "/arrays/array_" + str(img_nbr) + ".npy"
     array = np.load(array_path)
-    plt.imshow(array, interpolation='nearest')
-    plt.show()
     dcm_file0 = os.listdir(client_path)[0]
     dcm_path0 = client_path + "/" + dcm_file0
     dcm_files = os.listdir(dcm_path0)
@@ -542,6 +551,16 @@ def segmentation_2d(model, client_path, img_nbr, speed, strategy):
         dcm_path = dcm_path0 + "/" + file
         if len(os.listdir(dcm_path)) > 5:
             break
+
+    index = dcm_contour.get_index(dcm_path, "GTV-1")
+    images, contours = dcm_contour.get_data(dcm_path, index=index)
+    for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
+        dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+    cntr = contours[img_nbr]
+    plt.imshow(cntr)
+    plt.show()
+
+
     predictions = np.zeros((512, 512))
     slice_thickness, Z0 = getZ(dcm_path)
     image = array
