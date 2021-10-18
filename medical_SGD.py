@@ -4,7 +4,7 @@ from tensorflow import keras
 
 
 def make_all():
-    client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-419'
+    client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-402'
 
     # x_train, y_train, x_test, y_test = med_utils.prepareTrainTest_2d('2d_dataset_cnn.pickle', "cnn")
     #
@@ -20,11 +20,14 @@ def make_all():
 
     # print(SGD_acc)
 
-    # for i in range(95, 100, 2):
-    #     med_utils.segmentation_2d(model1, client_path, i, 8, strategy="dense")
-    #     med_utils.segmentation_2d(model2, client_path, i, 8, strategy="cnn")
+    for i in range(52, 87, 2):
+        med_utils.segmentation_2d(model1, client_path, i, 1, strategy="dense")
+        med_utils.segmentation_2d(model2, client_path, i, 1, strategy="cnn")
 
-    med_utils.segmentation_2d(model1, client_path, 78, 8, strategy="dense")
+    # med_utils.segmentation_2d(model1, client_path, 78, 8, strategy="dense")
+
+    # med_utils.calibrate("predictions cnn.npy", client_path, 78, 600)
+    # med_utils.calibrate("predictions dense.npy", client_path, 78, 600)
 
 
     # return SGD_acc

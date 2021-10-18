@@ -534,6 +534,18 @@ def heatMap(predictions, img_nbr, strategy):
 
 
 
+
+def finalPrediction(cntr, predictions, threshold):
+    for i in range(len(predictions)):
+        for j in range(len(predictions[i])):
+            if predictions[(i,j)] > threshold and cntr[(i, j)] != 1:
+                cntr[(i, j)] = 0.5
+    plt.imshow(cntr)
+    plt.show()
+
+
+
+
 def segmentation_2d(model, client_path, img_nbr, speed, strategy):
     ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
         args:
@@ -552,6 +564,7 @@ def segmentation_2d(model, client_path, img_nbr, speed, strategy):
         if len(os.listdir(dcm_path)) > 5:
             break
 
+    # plot the rt struct of the image
     index = dcm_contour.get_index(dcm_path, "GTV-1")
     images, contours = dcm_contour.get_data(dcm_path, index=index)
     for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
@@ -587,8 +600,32 @@ def segmentation_2d(model, client_path, img_nbr, speed, strategy):
             if pred > 0.5:
                 print((pred, y, x))
             predictions[y:y + 32, x:x + 32] += pred[0]
+
     heatMap(predictions, img_nbr, strategy)
-    return predictions
+
+    finalPrediction(cntr, predictions, 600)
+
+    np.save("predictions " + str(strategy), predictions)
+
+    return cntr, predictions
+
+
+
+def calibrate(path, client_path, img_nbr, threshold):
+    predictions = np.load(path)
+    dcm_file0 = os.listdir(client_path)[0]
+    dcm_path0 = client_path + "/" + dcm_file0
+    dcm_files = os.listdir(dcm_path0)
+    for file in dcm_files:
+        dcm_path = dcm_path0 + "/" + file
+        if len(os.listdir(dcm_path)) > 5:
+            break
+    # plot the rt struct of the image
+    index = dcm_contour.get_index(dcm_path, "GTV-1")
+    images, contours = dcm_contour.get_data(dcm_path, index=index)
+    cntr = contours[img_nbr]
+    finalPrediction(cntr, predictions, threshold)
+
 
 
 def crop_3d(image, z, y, x): #vertical, horizontal
