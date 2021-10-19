@@ -340,12 +340,12 @@ def create_image_mask_forall(general_path, index_name):
             index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
-    for folder in patients_folders:
+    for folder in patients_folders[:10]: #CHECK
         newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
             for f2 in newfiles:
-                if f2 != 'images' and f2 != 'masks' and f2 != 'masks_Lung_Left':
+                if f2 != 'images' and f2 != 'masks' and f2 != 'masks_Lung_Left' and f2 != 'arrays':
                     newpath2 = newpath + "/" + f2
                     newfiles2 = os.listdir(newpath2)
                     for f3 in newfiles2:
@@ -462,7 +462,7 @@ def store_array_forall(general_path, index_name):
 #             im = cv2.imread(newpath3)
 #             print(im.shape)
 
-# create_image_mask_forall(general_path, 'Spinal-Cord')
+# create_image_mask_forall(general_path, 'GTV-1')
 # store_array_forall(general_path, 'GTV-1')
 
 

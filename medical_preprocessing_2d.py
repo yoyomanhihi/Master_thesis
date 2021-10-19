@@ -2,7 +2,6 @@ import cv2
 import sys
 import numpy as np
 import os
-from tensorflow.keras.layers import Flatten
 import pickle
 import re
 import random
@@ -93,7 +92,7 @@ def isFullYellow(mask, y, x):
         return True
 
 
-def allFullYellow(mask, jump=2):
+def allFullYellow(mask, jump=3):
     ''' Return a list of coordonates of the mask that are full yellow
         args:
             mask: the mask with the segmented tumor
@@ -104,6 +103,26 @@ def allFullYellow(mask, jump=2):
             if (isFullYellow(mask, y, x)):
                 allcoords.append((y, x))
     return allcoords
+
+
+
+def allFullYellow2(mask, jump=7):
+    ''' Return a list of fullyellows and fullpurples near fullyellows
+    '''
+    fullyellows = []
+    fullpurples = []
+    found = 0
+    for y in range(0, 480, jump):
+        for x in range(0, 480, jump):
+            if isFullYellow(mask, y, x):
+                fullyellows.append((y, x))
+                found+=1
+            elif isFullPurple(mask, y, x) and found > 0:
+                fullpurples.append((y, x))
+                found-=1
+
+    return fullyellows, fullpurples
+
 
 
 def isFullPurple(mask, y, x):
@@ -154,7 +173,7 @@ def allMostlyYellow(mask, jump=7):
     return mostly_yellows, mostly_purples
 
 
-def randomFullPurple(mask, nbr = 2): #CHECK
+def randomFullPurple(mask, nbr = 5): #CHECK
     ''' Generate at most nbr random coordonates of full purple coordonates
         args:
             mask: the 512 x 512 mask of the segmentation
@@ -179,11 +198,11 @@ def prepareAllYellows(allyellows, image, z):
             data: the list of subimages + label to add to the dataset'''
     images_list = []
     for pixel in allyellows:
-        flatten_subimage = crop(image, pixel[0], pixel[1]).flatten()
-        flatten_subimage = np.append(flatten_subimage, (z - MEANZ) / STDZ)
-        flatten_subimage = np.append(flatten_subimage, (pixel[0]-MEANXY)/STDXY)
-        flatten_subimage = np.append(flatten_subimage, (pixel[1]-MEANXY)/STDXY)
-        images_list.append(flatten_subimage)
+        subimage = crop(image, pixel[0], pixel[1]).flatten()
+        subimage = np.append(subimage, (z - MEANZ) / STDZ)
+        subimage = np.append(subimage, (pixel[0]-MEANXY)/STDXY)
+        subimage = np.append(subimage, (pixel[1]-MEANXY)/STDXY)
+        images_list.append(subimage)
     labels_list = np.ones((len(allyellows),), dtype=int)
     data = list(zip(images_list, labels_list))
     return data
@@ -198,11 +217,11 @@ def prepareAllPurples(allpurples, image, z):
             data: the list of subimages + label to add to the dataset'''
     images_list = []
     for pixel in allpurples:
-        flatten_subimage = crop(image, pixel[0], pixel[1]).flatten()
-        flatten_subimage = np.append(flatten_subimage, (z - MEANZ) / STDZ)
-        flatten_subimage = np.append(flatten_subimage, (pixel[0]-MEANXY)/STDXY)
-        flatten_subimage = np.append(flatten_subimage, (pixel[1]-MEANXY)/STDXY)
-        images_list.append(flatten_subimage)
+        subimage = crop(image, pixel[0], pixel[1]).flatten()
+        subimage = np.append(subimage, (z - MEANZ) / STDZ)
+        subimage = np.append(subimage, (pixel[0]-MEANXY)/STDXY)
+        subimage = np.append(subimage, (pixel[1]-MEANXY)/STDXY)
+        images_list.append(subimage)
     labels_list = np.zeros((len(allpurples),), dtype=int)
     data = list(zip(images_list, labels_list))
     return data
@@ -255,10 +274,10 @@ def generateDatasetFromOneClient(masks_path, arrays_path, dcm_path):
         image = np.load(array_file)
         image = image-MEAN
         image = image/STD
-        allyellows, allpurples = allMostlyYellow(mask) #CHECK
-        # allpurples = randomFullPurple(mask)
-        # allyellows = allFullYellow(mask)
-        allpurples.extend(randomFullPurple(mask))
+        # allyellows, allpurples = allMostlyYellow(mask) #CHECK
+        allpurples = randomFullPurple(mask)
+        allyellows = allFullYellow(mask)
+        # allpurples.extend(randomFullPurple(mask))
         count0 += len(allpurples)
         count1 += len(allyellows)
         z = Z0 + i*slice_thickness
@@ -339,5 +358,5 @@ def generateAndStore(name, nbclients):
 
 
 # getMeanAndStd(general_path, 50)
-# generateAndStore('2d_dataset_mostly.pickle', nbclients=300)
+generateAndStore('test.pickle', nbclients=10)
 

@@ -69,23 +69,24 @@ def prepareTrainTest_2d(path, strategy):
         if strategy == "dense":
             elem[0][1025] = elem[0][1025]/480
             elem[0][1026] = elem[0][1026]/480
-            xy.append(elem[0][1025])
-            xy.append(elem[0][1026])
-            z.append(elem[0][1024])
+            # xy.append(elem[0][1025])
+            # xy.append(elem[0][1026])
+            # z.append(elem[0][1024])
         # Add the inputs and outputs to the data
+        elif strategy == "cnn":
+            elem[0] = np.delete(elem[0], [1024, 1025, 1026])
+            np.reshape(elem[0], (32, 32))
         inputs.append(elem[0])
         outputs.append(elem[1])
-    xy = np.array(xy)
-    z = np.array(z)
+    # xy = np.array(xy)
+    # z = np.array(z)
     # print("mean xy: " + str(xy.mean()))
     # print("std xy: " + str(xy.std()))
     # print("mean z: " + str(z.mean()))
     # print("std z: " + str(z.std()))
     outputs = np.asarray(outputs).astype('float32').reshape((-1, 1))
-    print(np.shape(inputs))
     if strategy == "cnn":
         inputs = np.reshape(inputs, (len(inputs), 32, 32, 1))
-        print(np.shape(inputs))
     x_train = inputs[:train_size]
     y_train = outputs[:train_size]
     x_test = inputs[train_size:]
