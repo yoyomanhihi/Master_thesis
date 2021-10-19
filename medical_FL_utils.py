@@ -600,11 +600,12 @@ def segmentation_2d(model, client_path, img_nbr, speed, strategy):
             pred = model.predict(reshaped)
             if pred > 0.5:
                 print((pred, y, x))
-            predictions[y:y + 32, x:x + 32] += pred[0]
+            # predictions[y:y + 32, x:x + 32] += pred[0]
+            predictions[16, 16] += pred[0] #CHECK
 
     heatMap(predictions, img_nbr, strategy)
 
-    finalPrediction(cntr, predictions, 600)
+    finalPrediction(cntr, predictions, 0.5) #CHECK
 
     np.save("predictions " + str(strategy), predictions)
 

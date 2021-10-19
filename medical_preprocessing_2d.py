@@ -106,7 +106,7 @@ def allFullYellow(mask, jump=3):
 
 
 
-def allFullYellow2(mask, jump=7):
+def allFullYellow2(mask, jump=3):
     ''' Return a list of fullyellows and fullpurples near fullyellows
     '''
     fullyellows = []
@@ -274,10 +274,12 @@ def generateDatasetFromOneClient(masks_path, arrays_path, dcm_path):
         image = np.load(array_file)
         image = image-MEAN
         image = image/STD
-        # allyellows, allpurples = allMostlyYellow(mask) #CHECK
-        allpurples = randomFullPurple(mask)
-        allyellows = allFullYellow(mask)
-        # allpurples.extend(randomFullPurple(mask))
+        allyellows, allpurples = allFullYellow2(mask) #CHECK
+        # allpurples = randomFullPurple(mask)
+        # allyellows = allFullYellow(mask)
+        a = random.randint(1, 10)
+        if a == 8:
+            allpurples.extend(randomFullPurple(mask, 1))
         count0 += len(allpurples)
         count1 += len(allyellows)
         z = Z0 + i*slice_thickness
@@ -358,5 +360,5 @@ def generateAndStore(name, nbclients):
 
 
 # getMeanAndStd(general_path, 50)
-generateAndStore('test.pickle', nbclients=10)
+# generateAndStore('2d_dataset_fullonly_2.pickle', nbclients=300)
 
