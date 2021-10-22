@@ -58,12 +58,15 @@ def generateDatasetFromOneClient(masks_path, arrays_path):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
         if np.sum(mask) > 7864320: # If there is a tumor
-            array_file = arrays_path + "/array_" + str(i) + ".npy"
-            image = np.load(array_file)
-            image = image - MEAN
-            image = image / STD
-            inputs.append(image)
-            outputs.append(mask)
+            if random.randint(0, 29) == 20:
+                mask[mask < 40] = 0 # Set out of tumor to 0
+                mask[mask > 210] = 1 # Set out of tumor to 1
+                array_file = arrays_path + "/array_" + str(i) + ".npy"
+                image = np.load(array_file)
+                image = image - MEAN
+                image = image / STD
+                inputs.append(image)
+                outputs.append(mask)
     data = list(zip(inputs, outputs))
     return data
 
@@ -102,4 +105,4 @@ def generateAndStore(name, nbclients):
     storeDataset(dataset, name)
 
 
-generateAndStore("unet_dataset.pickle", 10)
+generateAndStore("unet_dataset.pickle", 300)

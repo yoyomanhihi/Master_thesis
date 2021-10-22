@@ -13,6 +13,9 @@ from tensorflow.keras.layers import Activation
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import MaxPooling2D
 from tensorflow.keras.layers import Dropout
+from keras.models import *
+from keras.layers import *
+from keras.optimizers import adam_v2 #CHECK
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from sklearn.metrics import accuracy_score
@@ -601,7 +604,7 @@ def segmentation_2d(model, client_path, img_nbr, speed, strategy):
             if pred > 0.5:
                 print((pred, y, x))
             # predictions[y:y + 32, x:x + 32] += pred[0]
-            predictions[16, 16] += pred[0] #CHECK
+            predictions[y + 16, x + 16] += pred[0] #CHECK
 
     heatMap(predictions, img_nbr, strategy)
 
