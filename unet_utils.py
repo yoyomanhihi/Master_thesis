@@ -17,6 +17,9 @@ import os
 import seaborn
 import matplotlib.pyplot as plt
 import cv2
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 
 MEAN = -741.7384087183515
@@ -25,6 +28,22 @@ STD = 432.83608694943786
 
 def SDC(TP, FP, FN):
     return 2*TP/(2*TP + FP + FN)
+
+
+def diceAcc(labels, prediction, smooth=1e-6):
+
+    # flatten label and prediction tensors
+    labels = K.flatten(labels)
+    prediction = K.flatten(prediction)
+
+    intersection = K.sum(K.dot(labels, prediction))
+    dice = (2 * intersection + smooth) / (K.sum(labels) + K.sum(prediction) + smooth)
+    return dice
+
+
+
+def diceLoss(labels, prediction, smooth=1e-6):
+    return 1-diceAcc(labels, prediction, smooth=smooth)
 
 
 
@@ -188,39 +207,18 @@ def test_model(x_test, y_test, model):
             acc: accuracy of the model
 
     """
-    predictions = []
-    accs = []
+    dices = []
     y_test = np.array(y_test)
     for k in range(len(x_test)):
         x_test[k] = np.reshape(x_test[k], (1, 512, 512, 1))
         prediction = model.predict(x_test[k])
-        prediction = np.reshape(prediction, (512, 512))
-        predictions.append(prediction)
-    predictions = np.array(predictions)
-    for w in range(len(predictions)):
-        for i in range(len(predictions)):
-            for j in range(len(predictions[i])):
-                if predictions[(w, i, j)] > 0.5:
-                    predictions[(w, i, j)] = 1
-                else:
-                    predictions[(w, i, j)] = 0
-        TP = 0
-        FP = 0
-        FN = 0
-        for k in range(len(predictions[w])):
-            for k2 in range(len(predictions[(w, k)])):
-                if predictions[(w, k, k2)] == 0:
-                    if y_test[(w, k, k2)] == 1:
-                        FN += 1
-                if predictions[(w, k, k2)] == 1:
-                    if y_test[(w, k, k2)] == 1:
-                        TP += 1
-                    else:
-                        FP += 1
-        acc = SDC(TP, FP, FN)
-        accs.append(acc)
-    print("Finale accuracy = " + str(acc))
-    return acc
+        dice = diceAcc(y_test[k], prediction)
+        dices.append(dice)
+    dices = np.array(dices)
+    mean_dice = np.mean(dices)
+    print("Finale accuracy = " + str(mean_dice))
+    print(dices)
+    return mean_dice
 
 
 
@@ -243,8 +241,7 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
 
     model = get_model((512, 512), 1)
 
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
     model.summary()
 
@@ -259,6 +256,8 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
     # Train the model, doing validation at the end of each epoch.
     epochs = 15
     model.fit(x_train, y_train, batch_size=16, epochs=epochs, callbacks=callbacks)
+
+    model.save('unet_model.h5')
 
     test_model(x_test, y_test, model)
 

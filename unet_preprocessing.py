@@ -105,4 +105,4 @@ def generateAndStore(name, nbclients):
     storeDataset(dataset, name)
 
 
-generateAndStore("unet_dataset.pickle", 300)
+# generateAndStore("unet_dataset.pickle", 50)

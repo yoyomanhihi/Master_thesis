@@ -106,7 +106,7 @@ def allFullYellow(mask, jump=3):
 
 
 
-def allFullYellow2(mask, jump=3):
+def allFullYellow2(mask, jump=7):
     ''' Return a list of fullyellows and fullpurples near fullyellows
     '''
     fullyellows = []
