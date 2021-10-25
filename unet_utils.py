@@ -22,6 +22,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+
 MEAN = -741.7384087183515
 STD = 432.83608694943786
 
@@ -30,20 +31,38 @@ def SDC(TP, FP, FN):
     return 2*TP/(2*TP + FP + FN)
 
 
-def diceAcc(labels, prediction, smooth=1e-6):
+def jaccard_distance_loss(y_true, y_pred, smooth=100):
+    """
+    Jaccard = (|X & Y|)/ (|X|+ |Y| - |X & Y|)
+            = sum(|A*B|)/(sum(|A|)+sum(|B|)-sum(|A*B|))
 
-    # flatten label and prediction tensors
-    labels = K.flatten(labels)
-    prediction = K.flatten(prediction)
+    The jaccard distance loss is usefull for unbalanced datasets. This has been
+    shifted so it converges on 0 and is smoothed to avoid exploding or disapearing
+    gradient.
 
-    intersection = K.sum(K.dot(labels, prediction))
-    dice = (2 * intersection + smooth) / (K.sum(labels) + K.sum(prediction) + smooth)
-    return dice
+    Ref: https://en.wikipedia.org/wiki/Jaccard_index
+
+    @url: https://gist.github.com/wassname/f1452b748efcbeb4cb9b1d059dce6f96
+    @author: wassname
+    """
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+    return (1 - jac) * smooth
 
 
+def dice_coef(y_true, y_pred, smooth=1):
+    """
+    Dice = (2*|X & Y|)/ (|X|+ |Y|)
+         =  2*sum(|A*B|)/(sum(A^2)+sum(B^2))
+    ref: https://arxiv.org/pdf/1606.04797v1.pdf
+    """
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    return (2. * intersection + smooth) / (K.sum(K.square(y_true),-1) + K.sum(K.square(y_pred),-1) + smooth)
 
-def diceLoss(labels, prediction, smooth=1e-6):
-    return 1-diceAcc(labels, prediction, smooth=smooth)
+
+def dice_coef_loss(y_true, y_pred):
+    return 1-dice_coef(y_true, y_pred)
 
 
 
@@ -208,16 +227,18 @@ def test_model(x_test, y_test, model):
 
     """
     dices = []
-    y_test = np.array(y_test)
-    for k in range(len(x_test)):
-        x_test[k] = np.reshape(x_test[k], (1, 512, 512, 1))
-        prediction = model.predict(x_test[k])
-        dice = diceAcc(y_test[k], prediction)
+    test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
+    for (X_test, Y_test) in test_batched:
+        print("shape: " + str(np.shape(X_test)))
+        predictions = model.predict(X_test)
+    predictions[predictions >= 0.5] = 1
+    predictions[predictions <= 0.5] = 1
+    for i in range(len(predictions)):
+        dice = dice_coef(y_test[i], predictions[i])
         dices.append(dice)
     dices = np.array(dices)
     mean_dice = np.mean(dices)
     print("Finale accuracy = " + str(mean_dice))
-    print(dices)
     return mean_dice
 
 
@@ -241,7 +262,7 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
 
     model = get_model((512, 512), 1)
 
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss=jaccard_distance_loss, metrics=[dice_coef])
 
     model.summary()
 
@@ -259,7 +280,7 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
 
     model.save('unet_model.h5')
 
-    test_model(x_test, y_test, model)
+    # test_model(x_test, y_test, model)
 
 
     return model
@@ -300,10 +321,6 @@ def segmentation_2d(model, client_path, img_nbr):
             img_nbr: number of the image from the patient to be segmented
         return:
             predictions: the 2d array with estimated probability of tumors'''
-    array_path = client_path + "/arrays/array_" + str(img_nbr) + ".npy"
-    array = np.load(array_path)
-    array = array - MEAN
-    array = array / STD
     dcm_file0 = os.listdir(client_path)[0]
     dcm_path0 = client_path + "/" + dcm_file0
     dcm_files = os.listdir(dcm_path0)
@@ -311,11 +328,6 @@ def segmentation_2d(model, client_path, img_nbr):
         dcm_path = dcm_path0 + "/" + file
         if len(os.listdir(dcm_path)) > 5:
             break
-    mask_file = client_path + "/masks/mask_" + str(img_nbr) + ".png"
-    mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-    if np.sum(mask) > 7864320:  # If there is a tumor
-        mask[mask < 40] = 0  # Set out of tumor to 0
-        mask[mask > 210] = 1  # Set out of tumor to 1
 
     # plot the rt struct of the image
     index = dcm_contour.get_index(dcm_path, "GTV-1")
@@ -326,8 +338,10 @@ def segmentation_2d(model, client_path, img_nbr):
     plt.imshow(cntr)
     plt.show()
 
-
-
+    array_path = client_path + "/arrays/array_" + str(img_nbr) + ".npy"
+    array = np.load(array_path)
+    array = array - MEAN
+    array = array / STD
     array = np.reshape(array, (1, 512, 512, 1))
     predictions = model.predict(array)
     predictions = np.reshape(predictions, (512, 512))
@@ -336,27 +350,9 @@ def segmentation_2d(model, client_path, img_nbr):
 
     finalPrediction(cntr, predictions)
 
-    for i in range(len(predictions)):
-        for j in range(len(predictions[i])):
-            if predictions[(i, j)] > 0.5:
-                predictions[(i, j)] = 1
-            else:
-                predictions[(i, j)] = 0
-    TP = 0
-    FP = 0
-    FN = 0
-    for k in range(len(predictions)):
-        for k2 in range(len(predictions[k])):
-            if predictions[(k, k2)] == 0:
-                if mask[(k, k2)] == 1:
-                    FN += 1
-            if predictions[(k, k2)] == 1:
-                if mask[(k, k2)] == 1:
-                    TP += 1
-                else:
-                    FP += 1
-    acc = SDC(TP, FP, FN)
-    print("Finale accuracy = " + str(acc))
+
+    # dice = dice_coef(mask, predictions)
+    # print("Final dice accuracy = " + str(dice))
 
 
 
