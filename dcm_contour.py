@@ -453,7 +453,7 @@ def store_array_forall(general_path, index_name):
 
 def merge_masks_lungs_forall(general_path):
     patients_folders = os.listdir(general_path)
-    for folder in patients_folders[3:4]:
+    for folder in patients_folders[:50]:
         newpath = general_path + "/" + folder
         if (os.path.isdir(newpath)):
             masks_dir = newpath + '/masks_Lungs/'
@@ -465,7 +465,6 @@ def merge_masks_lungs_forall(general_path):
             for i in range(len(os.listdir(newpath_left))):
                 newpath_left2 = newpath_left + "/mask_" + str(i) + ".png"
                 newpath_right2 = newpath_right + "/mask_" + str(i) + ".png"
-                print(newpath_right2)
                 mask_left = cv2.imread(newpath_left2, cv2.IMREAD_GRAYSCALE)
                 mask_right = cv2.imread(newpath_right2, cv2.IMREAD_GRAYSCALE)
                 mask_lungs = mask_left + mask_right
@@ -487,7 +486,7 @@ def merge_masks_lungs_forall(general_path):
 #             print(im.shape)
 
 
-create_mask_only_forall(general_path, 'Lung-Left')
+# create_mask_only_forall(general_path, 'Lung-Left')
 # create_image_mask_forall(general_path, 'GTV-1')
 # store_array_forall(general_path, 'GTV-1')
 # merge_masks_lungs_forall(general_path)
