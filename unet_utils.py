@@ -10,6 +10,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import TensorBoard
 import keras
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
 import tensorflow as tf
 import dcm_contour
@@ -20,6 +21,8 @@ import cv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from keras.layers.advanced_activations import LeakyReLU
+import tensorlayer as tl
 
 
 
@@ -27,43 +30,24 @@ MEAN = -741.7384087183515
 STD = 432.83608694943786
 
 
-def SDC(TP, FP, FN):
-    return 2*TP/(2*TP + FP + FN)
-
-
-def jaccard_distance_loss(y_true, y_pred, smooth=100):
-    """
-    Jaccard = (|X & Y|)/ (|X|+ |Y| - |X & Y|)
-            = sum(|A*B|)/(sum(|A|)+sum(|B|)-sum(|A*B|))
-
-    The jaccard distance loss is usefull for unbalanced datasets. This has been
-    shifted so it converges on 0 and is smoothed to avoid exploding or disapearing
-    gradient.
-
-    Ref: https://en.wikipedia.org/wiki/Jaccard_index
-
-    @url: https://gist.github.com/wassname/f1452b748efcbeb4cb9b1d059dce6f96
-    @author: wassname
-    """
-    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
-    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
-    jac = (intersection + smooth) / (sum_ - intersection + smooth)
-    return (1 - jac) * smooth
-
-
-def dice_coef(y_true, y_pred, smooth=1):
-    """
-    Dice = (2*|X & Y|)/ (|X|+ |Y|)
-         =  2*sum(|A*B|)/(sum(A^2)+sum(B^2))
-    ref: https://arxiv.org/pdf/1606.04797v1.pdf
-    """
-    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
-    return (2. * intersection + smooth) / (K.sum(K.square(y_true),-1) + K.sum(K.square(y_pred),-1) + smooth)
-
+smooth = 1.
+# Dice Coefficient to work with Tensorflow
+def dice_coef(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
 def dice_coef_loss(y_true, y_pred):
-    return 1-dice_coef(y_true, y_pred)
+    return -dice_coef(y_true, y_pred)
 
+# Dice Coefficient to work outside Tensorflow
+def dice_coef_2(y_true, y_pred):
+    side = len(y_true[0])
+    y_true_f = y_true.reshape(side*side)
+    y_pred_f = y_pred.reshape(side*side)
+    intersection = sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (sum(y_true_f) + sum(y_pred_f) + smooth)
 
 
 def load(path):
@@ -215,6 +199,56 @@ def get_model(img_size, num_classes):
     return model
 
 
+def get_model2(optimizer, loss_metric, metrics, lr=1e-3):
+    inputs = Input((512, 512, 1))
+    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
+    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv1)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+    drop1 = Dropout(0.5)(pool1)
+
+    conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(drop1)
+    conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+    drop2 = Dropout(0.5)(pool2)
+
+    conv3 = Conv2D(128, (3, 3), activation='relu', padding='same')(drop2)
+    conv3 = Conv2D(128, (3, 3), activation='relu', padding='same')(conv3)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+    drop3 = Dropout(0.3)(pool3)
+
+    conv4 = Conv2D(256, (3, 3), activation='relu', padding='same')(drop3)
+    conv4 = Conv2D(256, (3, 3), activation='relu', padding='same')(conv4)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
+    drop4 = Dropout(0.3)(pool4)
+
+    conv5 = Conv2D(512, (3, 3), activation='relu', padding='same')(drop4)
+    conv5 = Conv2D(512, (3, 3), activation='relu', padding='same')(conv5)
+
+    up6 = concatenate([Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')(conv5), conv4], axis=3)
+    conv6 = Conv2D(256, (3, 3), activation='relu', padding='same')(up6)
+    conv6 = Conv2D(256, (3, 3), activation='relu', padding='same')(conv6)
+
+    up7 = concatenate([Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(conv6), conv3], axis=3)
+    conv7 = Conv2D(128, (3, 3), activation='relu', padding='same')(up7)
+    conv7 = Conv2D(128, (3, 3), activation='relu', padding='same')(conv7)
+
+    up8 = concatenate([Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(conv7), conv2], axis=3)
+    conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(up8)
+    conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv8)
+
+    up9 = concatenate([Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(conv8), conv1], axis=3)
+    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(up9)
+    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv9)
+
+    conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
+
+    model = Model(inputs=[inputs], outputs=[conv10])
+
+    model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
+
+    return model
+
+
 
 def test_model(x_test, y_test, model):
     """ Calculates the accuracy and the loss of the model
@@ -260,23 +294,23 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
     # model = unet.initial_model()
     # model.summary()
 
-    model = get_model((512, 512), 1)
+    model = get_model2(optimizer=tf.keras.optimizers.Adam, loss_metric=dice_coef_loss, metrics=[dice_coef, "accuracy"], lr=5*1e-5)
 
-    model.compile(optimizer='adam', loss=jaccard_distance_loss, metrics=[dice_coef])
+    # model.compile(optimizer='adam', loss="binary_crossentropy", metrics=['accuracy'])
 
     model.summary()
 
-    checkpointer = ModelCheckpoint("U-net_model.h5", verbose=1, save_best_only=True)
+    # checkpointer = ModelCheckpoint("U-net_model.h5", verbose=1, save_best_only=True)
 
-    callbacks = [
-        EarlyStopping(patience=3, monitor='val_loss'),
-        TensorBoard(log_dir='logs'),
-        checkpointer
-    ]
+    # callbacks = [
+    #     EarlyStopping(patience=3, monitor='val_loss'),
+    #     TensorBoard(log_dir='logs'),
+    #     checkpointer
+    # ]
 
     # Train the model, doing validation at the end of each epoch.
-    epochs = 15
-    model.fit(x_train, y_train, batch_size=16, epochs=epochs, callbacks=callbacks)
+    epochs = 100 #CHECK
+    model.fit(x_train, y_train, batch_size=16, epochs=epochs) # CHECK callbacks
 
     model.save('unet_model.h5')
 
@@ -306,7 +340,7 @@ def heatMap(predictions, img_nbr):
 def finalPrediction(cntr, predictions):
     for i in range(len(predictions)):
         for j in range(len(predictions[i])):
-            if predictions[(i,j)] > 0.5 and cntr[(i, j)] != 1:
+            if predictions[(i,j)] >= 0.5 and cntr[(i, j)] != 1:
                 cntr[(i, j)] = 0.5
     plt.imshow(cntr)
     plt.show()
@@ -330,7 +364,7 @@ def segmentation_2d(model, client_path, img_nbr):
             break
 
     # plot the rt struct of the image
-    index = dcm_contour.get_index(dcm_path, "GTV-1")
+    index = dcm_contour.get_index(dcm_path, "Lung-Right")
     images, contours = dcm_contour.get_data(dcm_path, index=index)
     for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
         dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
@@ -347,6 +381,8 @@ def segmentation_2d(model, client_path, img_nbr):
     predictions = np.reshape(predictions, (512, 512))
 
     heatMap(predictions, img_nbr)
+
+    print(np.max(predictions))
 
     finalPrediction(cntr, predictions)
 
