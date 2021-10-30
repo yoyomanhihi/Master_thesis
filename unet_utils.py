@@ -294,7 +294,7 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
     # model = unet.initial_model()
     # model.summary()
 
-    model = get_model2(optimizer=tf.keras.optimizers.Adam, loss_metric=dice_coef_loss, metrics=[dice_coef, "accuracy"], lr=5*1e-5)
+    model = get_model2(optimizer=tf.keras.optimizers.Adam, loss_metric=dice_coef_loss, metrics=[dice_coef, "accuracy"], lr=1e-4)
 
     # model.compile(optimizer='adam', loss="binary_crossentropy", metrics=['accuracy'])
 
@@ -309,7 +309,7 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
     # ]
 
     # Train the model, doing validation at the end of each epoch.
-    epochs = 100 #CHECK
+    epochs = 150 #CHECK
     model.fit(x_train, y_train, batch_size=16, epochs=epochs) # CHECK callbacks
 
     model.save('unet_model.h5')
@@ -341,7 +341,7 @@ def finalPrediction(cntr, predictions):
     for i in range(len(predictions)):
         for j in range(len(predictions[i])):
             if predictions[(i,j)] >= 0.5 and cntr[(i, j)] != 1:
-                cntr[(i, j)] = 0.5
+                cntr[(i, j)] = 2
     plt.imshow(cntr)
     plt.show()
 
@@ -364,7 +364,7 @@ def segmentation_2d(model, client_path, img_nbr):
             break
 
     # plot the rt struct of the image
-    index = dcm_contour.get_index(dcm_path, "Lung-Right")
+    index = dcm_contour.get_index(dcm_path, "GTV-1")
     images, contours = dcm_contour.get_data(dcm_path, index=index)
     for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
         dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
@@ -382,16 +382,16 @@ def segmentation_2d(model, client_path, img_nbr):
 
     heatMap(predictions, img_nbr)
 
-    print(np.max(predictions))
-
     finalPrediction(cntr, predictions)
 
-
-    # dice = dice_coef(mask, predictions)
+    mask_path = client_path + "/masks/mask_" + str(img_nbr) + ".png"
+    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+    mask[mask < 40] = 0  # Set out of tumor to 0
+    mask[mask > 210] = 1  # Set out of tumor to 1
+    dice = dice_coef_2(mask, predictions)
+    print("dice accuracy: " + str(dice))
     # print("Final dice accuracy = " + str(dice))
 
-
-
-    np.save("predictions " + str(img_nbr), predictions)
+    # np.save("predictions " + str(img_nbr), predictions)
 
     return cntr, predictions
