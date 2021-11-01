@@ -57,18 +57,17 @@ def generateDatasetFromOneClient(masks_path, arrays_path):
     for i in range(len(masks_files)):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-        if np.sum(mask) > 7864320: # If there is a tumor
-            if random.randint(0, 30) == 2: #CHECK
-                # print((i, np.sum(mask)))
-                mask[mask < 40] = 0 # Set out of tumor to 0
-                mask[mask > 210] = 1 # Set out of tumor to 1
-                print(np.sum(mask) / (512*512)) # Get zone/background ratio
-                array_file = arrays_path + "/array_" + str(i) + ".npy"
-                image = np.load(array_file)
-                image = image - MEAN
-                image = image / STD
-                inputs.append(image)
-                outputs.append(mask)
+        if np.sum(mask) > 8400000:  # 7864320: # If there is a tumor #CHECK
+            print((i, np.sum(mask)))
+            mask[mask < 40] = 0 # Set out of tumor to 0
+            mask[mask > 210] = 1 # Set out of tumor to 1
+            # print(np.sum(mask) / (512*512)) # Get zone/background ratio
+            array_file = arrays_path + "/array_" + str(i) + ".npy"
+            image = np.load(array_file)
+            image = image - MEAN
+            image = image / STD
+            inputs.append(image)
+            outputs.append(mask)
     data = list(zip(inputs, outputs))
     return data
 
@@ -108,4 +107,4 @@ def generateAndStore(name, nbclients):
     storeDataset(dataset, name)
 
 
-generateAndStore("unet_dataset_first300.pickle", 300)
+generateAndStore("unet_dataset_bigtumors_first50.pickle", 50)

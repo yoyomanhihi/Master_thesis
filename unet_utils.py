@@ -294,25 +294,23 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
     # model = unet.initial_model()
     # model.summary()
 
-    model = get_model2(optimizer=tf.keras.optimizers.Adam, loss_metric=dice_coef_loss, metrics=[dice_coef, "accuracy"], lr=1e-4)
-
-    # model.compile(optimizer='adam', loss="binary_crossentropy", metrics=['accuracy'])
-
-    model.summary()
-
-    # checkpointer = ModelCheckpoint("U-net_model.h5", verbose=1, save_best_only=True)
-
+    # checkpointer = ModelCheckpoint('unet_model_Lungs_first5_temp.h5', verbose=1, save_best_only=True)
+    #
     # callbacks = [
     #     EarlyStopping(patience=3, monitor='val_loss'),
     #     TensorBoard(log_dir='logs'),
     #     checkpointer
     # ]
 
-    # Train the model, doing validation at the end of each epoch.
-    epochs = 150 #CHECK
-    model.fit(x_train, y_train, batch_size=16, epochs=epochs) # CHECK callbacks
+    model = get_model2(optimizer=tf.keras.optimizers.Adam, loss_metric=dice_coef_loss, metrics=[dice_coef, "accuracy"], lr=1e-4)
 
-    model.save('unet_model.h5')
+    # model.compile(optimizer='adam', loss="binary_crossentropy", metrics=['accuracy'])
+
+    model.summary()
+
+    # Train the model, doing validation at the end of each epoch.
+    epochs = 50 #CHECK
+    model.fit(x_train, y_train, batch_size=16, epochs=epochs) # CHECK callbacks
 
     # test_model(x_test, y_test, model)
 
@@ -338,16 +336,18 @@ def heatMap(predictions, img_nbr):
 
 
 def finalPrediction(cntr, predictions):
+    print(np.max(cntr))
     for i in range(len(predictions)):
         for j in range(len(predictions[i])):
-            if predictions[(i,j)] >= 0.5 and cntr[(i, j)] != 1:
-                cntr[(i, j)] = 2
+            if predictions[(i, j)] >= 0.5 and cntr[(i, j)] != 1:
+                cntr[(i, j)] = 40
+    cntr[cntr==1] = 255
     plt.imshow(cntr)
     plt.show()
 
 
 
-def segmentation_2d(model, client_path, img_nbr):
+def segmentation_2d(model, client_path, img_nbr, zone):
     ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
         args:
             model: model used for predictions
@@ -363,12 +363,25 @@ def segmentation_2d(model, client_path, img_nbr):
         if len(os.listdir(dcm_path)) > 5:
             break
 
-    # plot the rt struct of the image
-    index = dcm_contour.get_index(dcm_path, "GTV-1")
-    images, contours = dcm_contour.get_data(dcm_path, index=index)
-    for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
-        dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
-    cntr = contours[img_nbr]
+    if zone == "tumor":
+        # plot the rt struct of the image
+        index = dcm_contour.get_index(dcm_path, "GTV-1")
+        images, contours = dcm_contour.get_data(dcm_path, index=index)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
+            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+        cntr = contours[img_nbr]
+    elif zone == "lungs":
+        index = dcm_contour.get_index(dcm_path, "Lung-Left")
+        images, contours = dcm_contour.get_data(dcm_path, index=index)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours[img_nbr:img_nbr + 1]):
+            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+        cntr1 = contours[img_nbr]
+        index = dcm_contour.get_index(dcm_path, "Lung-Right")
+        images, contours = dcm_contour.get_data(dcm_path, index=index)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours[img_nbr:img_nbr + 1]):
+            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+        cntr2 = contours[img_nbr]
+        cntr = cntr1 + cntr2
     plt.imshow(cntr)
     plt.show()
 
@@ -384,7 +397,10 @@ def segmentation_2d(model, client_path, img_nbr):
 
     finalPrediction(cntr, predictions)
 
-    mask_path = client_path + "/masks/mask_" + str(img_nbr) + ".png"
+    if zone == "tumor":
+        mask_path = client_path + "/masks/mask_" + str(img_nbr) + ".png"
+    elif zone == "lungs":
+        mask_path = client_path + "/masks_Lungs/mask_" + str(img_nbr) + ".png"
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
     mask[mask < 40] = 0  # Set out of tumor to 0
     mask[mask > 210] = 1  # Set out of tumor to 1
