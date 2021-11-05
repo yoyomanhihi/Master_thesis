@@ -167,10 +167,10 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
 
 
 
-def heatMap(predictions, img_nbr):
+def heatMap(predictions):
     """ Plot the heat map of the tumor predictions"""
     fig, ax = plt.subplots()
-    title = " model on image: " + str(img_nbr)
+    title = "Prediction heatmap"
     plt.title(title, fontsize=18)
     ttl = ax.title
     ttl.set_position([0.5, 1.05])
@@ -183,13 +183,13 @@ def heatMap(predictions, img_nbr):
 
 
 
-def finalPrediction(cntr, predictions):
-    print(np.max(cntr))
+def finalPrediction(cntr, predictions, zone):
     for i in range(len(predictions)):
         for j in range(len(predictions[i])):
             if predictions[(i, j)] >= 0.5 and cntr[(i, j)] != 1:
-                cntr[(i, j)] = 40
-    cntr[cntr==1] = 255
+                cntr[(i, j)] = 10
+    title = zone + " prediction"
+    plt.title(title, fontsize=18)
     plt.imshow(cntr)
     plt.show()
 
@@ -219,18 +219,18 @@ def segmentation_2d(model, client_path, img_nbr, zone):
             dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
         cntr = contours[img_nbr]
     elif zone == "lungs":
-        index = dcm_contour.get_index(dcm_path, "Lung-Left")
-        images, contours = dcm_contour.get_data(dcm_path, index=index)
-        for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours[img_nbr:img_nbr + 1]):
+        index1 = dcm_contour.get_index(dcm_path, "Lung-Left")
+        index2 = dcm_contour.get_index(dcm_path, "Lung-Right")
+        images, contours1 = dcm_contour.get_data(dcm_path, index=index1)
+        images2, contours2 = dcm_contour.get_data(dcm_path, index=index2)
+        for i in range(len(contours1)):
+            contours1[i] = np.append(contours1[i], contours2[i], axis=0)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours1[img_nbr:img_nbr + 1]):
             dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
-        cntr1 = contours[img_nbr]
-        index = dcm_contour.get_index(dcm_path, "Lung-Right")
-        images, contours = dcm_contour.get_data(dcm_path, index=index)
-        for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours[img_nbr:img_nbr + 1]):
-            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
-        cntr2 = contours[img_nbr]
-        cntr = cntr1 + cntr2
-    plt.imshow(cntr)
+        cntr = contours1[img_nbr][0]
+        for i in range(1, len(contours1[img_nbr])):
+            print("ici")
+            cntr += contours1[img_nbr][i]
     plt.show()
 
     array_path = client_path + "/arrays/array_" + str(img_nbr) + ".npy"
@@ -241,9 +241,9 @@ def segmentation_2d(model, client_path, img_nbr, zone):
     predictions = model.predict(array)
     predictions = np.reshape(predictions, (512, 512))
 
-    heatMap(predictions, img_nbr)
+    heatMap(predictions)
 
-    finalPrediction(cntr, predictions)
+    finalPrediction(cntr, predictions, zone)
 
     if zone == "tumor":
         mask_path = client_path + "/masks/mask_" + str(img_nbr) + ".png"

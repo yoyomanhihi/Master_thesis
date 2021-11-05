@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 
-client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-006'
+client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001'
 
 def build_and_save():
     x_train, y_train, x_test, y_test = utils.prepareTrainTest('unet_dataset_bigtumors_first50.pickle')
@@ -24,7 +24,7 @@ def load_and_segment():
 
     # SGD_acc = utils.test_model(x_test, y_test, model)
 
-    print(utils.segmentation_2d(model, client_path, 37, "lungs"))
+    print(utils.segmentation_2d(model, client_path, 78, "lungs"))
 
 
 # build_and_save()
