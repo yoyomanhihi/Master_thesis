@@ -214,15 +214,15 @@ def segmentation_2d(model, client_path, img_nbr, zone):
     if zone == "tumor":
         # plot the rt struct of the image
         index = dcm_contour.get_index(dcm_path, "GTV-1")
-        images, contours = dcm_contour.get_data(dcm_path, index=index)
+        images, contours, _ = dcm_contour.get_data(dcm_path, index=index)
         for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
             dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
         cntr = contours[img_nbr]
     elif zone == "lungs":
         index1 = dcm_contour.get_index(dcm_path, "Lung-Left")
         index2 = dcm_contour.get_index(dcm_path, "Lung-Right")
-        images, contours1 = dcm_contour.get_data(dcm_path, index=index1)
-        images2, contours2 = dcm_contour.get_data(dcm_path, index=index2)
+        images, contours1, _ = dcm_contour.get_data(dcm_path, index=index1)
+        images2, contours2, _ = dcm_contour.get_data(dcm_path, index=index2)
         for i in range(len(contours1)):
             contours1[i] = np.append(contours1[i], contours2[i], axis=0)
         for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours1[img_nbr:img_nbr + 1]):

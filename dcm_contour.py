@@ -12,6 +12,7 @@ import cv2
 import shutil
 import scipy.misc
 from collections import defaultdict
+from PIL import Image, ImageDraw
 
 dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
 contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
@@ -49,7 +50,6 @@ def get_contour_file(path):
     inside dicom data structure.
     More information on ROIContourSequence available here:
     http://dicom.nema.org/medical/dicom/2016c/output/chtml/part03/sect_C.8.8.6.html
-
     Inputs:
             path (str): path of the the directory that has DICOM files in it, e.g. folder of a single patient
     Return:
@@ -131,6 +131,15 @@ def coord2pixels(contour_dataset, path):
     # y, x is how it's mapped
     pixel_coords = [(np.ceil((y - origin_y) / y_spacing), np.ceil((x - origin_x) / x_spacing)) for x, y, _ in coord]
 
+    pixel_coords2 = []
+
+    for i in range(len(pixel_coords)):
+        pixel_coords2.append((pixel_coords[i][1], pixel_coords[i][0]))
+
+    img = Image.new('L', (512, 512), 0)
+    ImageDraw.Draw(img).polygon(pixel_coords2, outline=1, fill=1)
+    mask = np.array(img)
+
     # get contour data for the image
     rows = []
     cols = []
@@ -139,7 +148,7 @@ def coord2pixels(contour_dataset, path):
         cols.append(j)
     contour_arr = csc_matrix((np.ones_like(rows), (rows, cols)), dtype=np.int8, shape=(img_arr.shape[0], img_arr.shape[1])).toarray()
 
-    return img_arr, contour_arr, img_ID
+    return img_arr, contour_arr, img_ID, mask
 
 
 
@@ -182,11 +191,11 @@ def get_contour_dict(contour_file, path, index):
     contour_list = cfile2pixels(contour_file, path, index)
 
     contour_dict = {}
-    for img_arr, contour_arr, img_id in contour_list:
+    for img_arr, contour_arr, img_id, mask in contour_list:
         if img_id not in contour_dict.keys(): # CHANGED
-            contour_dict[img_id] = [img_arr, contour_arr]
+            contour_dict[img_id] = [img_arr, contour_arr, mask]
         else:
-            contour_dict[img_id].extend([img_arr, contour_arr])
+            contour_dict[img_id].extend([img_arr, contour_arr, mask])
 
     return contour_dict
 
@@ -196,7 +205,7 @@ def get_contour_dict(contour_file, path, index):
 contour_arrays = cfile2pixels(file="1-1.dcm", path=dcm_path, ROIContourSeq=0)
 
 # get first image - contour array
-first_image, first_contour, img_id = contour_arrays[4]
+first_image, first_contour, img_id, mask = contour_arrays[4]
 
 # # show an example
 # plt.figure(figsize=(20, 10))
@@ -248,6 +257,7 @@ def get_data(path, index):
     """
     images = []
     contours = []
+    masks = []
     # handle `/` missing
     if path[-1] != '/': path += '/'
     # get contour file
@@ -260,12 +270,14 @@ def get_data(path, index):
     for k,v in ordered_slices:
         # get data from contour dict
         if k in contour_dict:
-            for i in range(0, len(contour_dict[k]), 2):
+            for i in range(0, len(contour_dict[k]), 3):
                 if i == 0:
                     images.append(contour_dict[k][i])
                     contours.append([contour_dict[k][i+1]])
+                    masks.append([contour_dict[k][i+2]])
                 if i > 0:
-                    contours[len(contours)-1] = np.append(contours[len(contours)-1], [contour_dict[k][i + 1]], axis=0)
+                    contours[len(contours)-1] = np.append(contours[len(contours)-1], [contour_dict[k][i+1]], axis=0)
+                    masks[len(masks)-1] = np.append(masks[len(masks)-1], [contour_dict[k][i+2]], axis=0)
         # get data from dicom.read_file
         else:
             dcm_path = path + k + '.dcm'
@@ -273,9 +285,10 @@ def get_data(path, index):
             contour_arr = np.zeros_like(img_arr)
             images.append(img_arr)
             contours.append([contour_arr])
+            masks.append([contour_arr])
 
 
-    return np.array(images), np.array(contours)
+    return np.array(images), np.array(contours), np.array(masks)
 
 
 # images, contours = get_data(dcm_path, index=0) #CHECK
@@ -308,52 +321,6 @@ def get_index(dcm_path, index_name):
     print(dcm_path)
 
 
-
-def fill_contour(contour_arr):
-    # get initial pixel positions
-    pixel_positions = np.array([(i, j) for i, j in zip(np.where(contour_arr)[0], np.where(contour_arr)[1])])
-
-    # LEFT TO RIGHT SCAN
-    row_pixels = defaultdict(list)
-    for i, j in pixel_positions:
-        row_pixels[i].append((i, j))
-
-    for i in row_pixels:
-        pixels = row_pixels[i]
-        j_pos = [j for i, j in pixels]
-        for j in range(min(j_pos), max(j_pos)):
-            row_pixels[i].append((i, j))
-    pixels = []
-    for k in row_pixels:
-        pix = row_pixels[k]
-        pixels.append(pix)
-    pixels = list(set([val for sublist in pixels for val in sublist]))
-
-    rows, cols = zip(*pixels)
-    contour_arr[rows, cols] = 1
-
-    # TOP TO BOTTOM SCAN
-    pixel_positions = pixels  # new positions added
-    row_pixels = defaultdict(list)
-    for i, j in pixel_positions:
-        row_pixels[j].append((i, j))
-
-    for j in row_pixels:
-        pixels = row_pixels[j]
-        i_pos = [i for i, j in pixels]
-        for i in range(min(i_pos), max(i_pos)):
-            row_pixels[j].append((i, j))
-    pixels = []
-    for k in row_pixels:
-        pix = row_pixels[k]
-        pixels.append(pix)
-    pixels = list(set([val for sublist in pixels for val in sublist]))
-    rows, cols = zip(*pixels)
-    contour_arr[rows, cols] = 1
-    return contour_arr
-
-
-
 def create_image_mask_files(path, index_name, img_format='png'):
     """
     Create image and corresponding mask files under to folders '/images' and '/masks'
@@ -365,9 +332,18 @@ def create_image_mask_files(path, index_name, img_format='png'):
     """
     # Extract Arrays from DICOM
     index = get_index(path, index_name)
-    X, Y = get_data(path, index)
+    images, contours, masks = get_data(path, index)
+    Y = []
+    for mask in masks:
+        if len(mask[0]) == 1:
+            Y.append(mask[0])
+        else:
+            ctr = mask[0]
+            for i in range(1, len(mask), 1):
+                ctr += mask[i]
+            ctr[ctr>1] = 0
+            Y.append(ctr)
 
-    Y = np.array([fill_contour(y) if y.max() == 1 else y for y in Y])
     # Create images and masks folders
     new_path = '/'.join(path.split('/')[:-2])
     images_dir = new_path + '/images/'
@@ -378,13 +354,8 @@ def create_image_mask_files(path, index_name, img_format='png'):
     if os.path.exists(masks_dir):
         shutil.rmtree(masks_dir)
     os.makedirs(masks_dir)
-    for i in range(len(X)):
-        plt.imsave(new_path + f'/images/image_{i}.{img_format}', X[i, :, :])
-        # arr = X[i, :, :]
-        # array_buffer = arr.tobytes()
-        # img = Image.new("I", arr.T.shape)
-        # img.frombytes(array_buffer, 'raw', "I;16")
-        # img.save(new_path + f'/images/image_{i}.{img_format}')
+    for i in range(len(images)):
+        plt.imsave(new_path + f'/images/image_{i}.{img_format}', images[i, :, :])
         plt.imsave(new_path + f'/masks/mask_{i}.png', Y[i, :, :])
 
 
@@ -423,31 +394,27 @@ def create_mask_files_only(path, index_name, img_format='png'):
         img_format (str): image format to save by, png by default
     """
     # Extract Arrays from DICOM
-    #57
     index = get_index(path, index_name)
-    X, Y = get_data(path, index)
-    Y2 = []
-    for y in Y:
-        if y[0].max() != 1:
-            Y2.append(y[0])
-        elif len(y[0]) == 1:
-            Y2.append(fill_contour(y[0]))
+    images, contours, masks = get_data(path, index)
+    Y = []
+    for mask in masks:
+        if len(mask[0]) == 1:
+            Y.append(mask[0])
         else:
-            ctr = fill_contour(y[0])
-            for i in range(1, len(y), 1):
-                ctr += fill_contour(y[i])
+            ctr = mask[0]
+            for i in range(1, len(mask), 1):
+                ctr += mask[i]
             ctr[ctr>1] = 0
-            Y2.append(ctr)
-    Y = np.array(Y2)
-    # Y = np.array([fill_contour(y[0]) if y[0].max() == 1 else y[0] for y in Y])
+            Y.append(ctr)
+    Y = np.array(Y)
     # Create images and masks folders
     new_path = '/'.join(path.split('/')[:-2])
-    masks_dir = new_path + '/masks_Lung_Left/'
+    masks_dir = new_path + '/masks_Lung_Right/'
     if os.path.exists(masks_dir):
         shutil.rmtree(masks_dir)
     os.makedirs(masks_dir)
-    for i in range(len(X)):
-        plt.imsave(new_path + f'/masks_Lung_Left/mask_{i}.{img_format}', Y[i, :, :])
+    for i in range(len(images)):
+        plt.imsave(new_path + f'/masks_Lung_Right/mask_{i}.{img_format}', Y[i, :, :])
 
 
 
@@ -458,7 +425,7 @@ def create_mask_only_forall(general_path, index_name):
             index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
-    for folder in patients_folders[:2]: #51, 68, 116, 120
+    for folder in patients_folders[:50]: #51, 68, 116, 120
         newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
@@ -526,6 +493,7 @@ def merge_masks_lungs_forall(general_path):
         newpath = general_path + "/" + folder
         if (os.path.isdir(newpath)):
             masks_dir = newpath + '/masks_Lungs/'
+            print(masks_dir)
             if os.path.exists(masks_dir):
                 shutil.rmtree(masks_dir)
             os.makedirs(masks_dir)
@@ -555,8 +523,7 @@ def merge_masks_lungs_forall(general_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'Lung-Left')
+# create_mask_only_forall(general_path, 'Lung-Right')
 # create_image_mask_forall(general_path, 'GTV-1')
 # store_array_forall(general_path, 'GTV-1')
-# merge_masks_lungs_forall(general_path)
-
+merge_masks_lungs_forall(general_path)

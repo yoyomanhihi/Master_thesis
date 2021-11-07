@@ -24,7 +24,7 @@ def load_and_segment():
 
     # SGD_acc = utils.test_model(x_test, y_test, model)
 
-    print(utils.segmentation_2d(model, client_path, 78, "lungs"))
+    print(utils.segmentation_2d(model, client_path, 37, "lungs"))
 
 
 # build_and_save()
