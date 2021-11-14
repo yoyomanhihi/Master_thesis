@@ -23,6 +23,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from keras.layers.advanced_activations import LeakyReLU
 import tensorlayer as tl
+import random
 
 
 
@@ -77,7 +78,7 @@ def prepareTrainTest(dataset_path):
     return x_train, y_train, x_test, y_test
 
 
-def get_model2(optimizer, loss_metric, metrics, lr=1e-3):
+def get_model():
     inputs = Input((512, 512, 1))
     conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
     conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv1)
@@ -122,12 +123,26 @@ def get_model2(optimizer, loss_metric, metrics, lr=1e-3):
 
     model = Model(inputs=[inputs], outputs=[conv10])
 
-    model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
-
     return model
 
 
-def simpleSGD_2d(x_train, y_train, x_test, y_test):
+
+def test_model(x_test, y_test, model):
+    score = 0
+    nbrelems = 0
+    test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
+    for (X_test, Y_test) in test_batched:
+        predictions = model.predict(X_test)
+        Y_test = np.array(Y_test)
+        for i in range(len(Y_test)):
+            coef = dice_coef_2(Y_test[i], predictions[i])
+            score += coef
+            nbrelems += 1
+    return score / nbrelems
+
+
+
+def simpleSGD(x_train, y_train):
     ''' Simple SGD algorithm for 32x32 images
         args:
             x_train: training images
@@ -140,9 +155,6 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
             SGD_model: model fitted
     '''
 
-    # unet = Unet()
-    # model = unet.initial_model()
-    # model.summary()
 
     # checkpointer = ModelCheckpoint('unet_model_Lungs_first5_temp.h5', verbose=1, save_best_only=True)
     #
@@ -152,9 +164,14 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
     #     checkpointer
     # ]
 
-    model = get_model2(optimizer=tf.keras.optimizers.Adam, loss_metric=dice_coef_loss, metrics=[dice_coef, "accuracy"], lr=1e-4)
+    optimizer = tf.keras.optimizers.Adam
+    loss_metric = dice_coef_loss
+    metrics = [dice_coef, "accuracy"]
+    lr = 1e-4
 
-    # model.compile(optimizer='adam', loss="binary_crossentropy", metrics=['accuracy'])
+    model = get_model()
+
+    model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
 
     model.summary()
 
@@ -164,6 +181,178 @@ def simpleSGD_2d(x_train, y_train, x_test, y_test):
 
 
     return model
+
+
+
+def createClients(listdatasetspaths):
+    ''' Create dictionary with the clients and their data
+        args:
+            listdatasetspaths: list of paths to the different detasets
+        return:
+            clients: dictionary of the different clients and their data. The entries are of the form client_1, client_2 etc
+            x_test: test set data coming from the multiple clients
+            y_test: test set labels coming from the multiple clients'''
+    clients = {}
+    x_test = []
+    y_test = []
+    clientnbr = 0
+    for datasetpath in listdatasetspaths:
+        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest(datasetpath)
+        clientname = "client_" + str(clientnbr)
+        data = list(zip(x_train_client, y_train_client))
+        clients[clientname] = data
+        x_test.extend(x_test_client)
+        y_test.extend(y_test_client)
+        clientnbr+=1
+    return clients, x_test, y_test
+
+
+
+def batch_data(data_shard, bs=32):
+    ''' Takes in a clients data shard and create a tfds object off it
+        args:
+            shard: a data, label constituting a client's data shard
+            bs:batch size
+        return:
+            tfds object'''
+    # seperate shard into data and labels lists
+    data, label = zip(*data_shard)
+    dataset = tf.data.Dataset.from_tensor_slices((list(data), list(label)))
+    return dataset.shuffle(len(label)).batch(bs)
+
+
+
+def weight_scalling_factor(clients_trn_data, client_name, frac):
+    ''' Calculates the proportion of a client’s local training data with the overall training data held by all clients
+        args:
+            clients_trn_data: dictionary of training data by client
+            client_name: name of the client
+    '''
+    client_names = list(clients_trn_data.keys())
+    # get the batch size
+    bs = list(clients_trn_data[client_name])[0][0].shape[0]
+    # first calculate the total training data points across clients
+    global_count = sum(
+        [tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() for client_name in client_names]) * bs
+    # get the total number of data points held by a client
+    local_count = tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() * bs
+    return (local_count / global_count) / frac
+
+
+def scale_model_weights(weight, scalar):
+    '''function for scaling a models weights'''
+    weight_final = []
+    steps = len(weight)
+    for i in range(steps):
+        weight_final.append(scalar * weight[i])
+    return weight_final
+
+
+def sum_scaled_weights(scaled_weight_list):
+    '''Return the sum of the listed scaled weights. The is equivalent to scaled avg of the weights'''
+    avg_grad = list()
+    # get the average grad accross all client gradients
+    for grad_list_tuple in zip(*scaled_weight_list):
+        layer_mean = tf.math.reduce_sum(grad_list_tuple, axis=0)
+        avg_grad.append(layer_mean)
+
+    return avg_grad
+
+
+
+def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50):
+    ''' federated averaging algorithm
+            args:
+                clients: dictionary of the clients and their data
+                X_test: test set data
+                y_test: test set labels
+                frac: fraction of clients selected at each round
+                bs: local mini-batch size
+                epo: number of local epochs
+                lr: learning rate
+                comms_round: number of global communication round
+            returns:
+                global_acc: the global accuracy after comms_round rounds
+    '''
+
+    # process and batch the training data for each client
+    clients_batched = dict()
+    for (client_name, data) in clients.items():
+        clients_batched[client_name] = batch_data(data, bs = bs)
+
+
+    optimizer = tf.keras.optimizers.Adam
+    loss_metric = dice_coef_loss
+    metrics = [dice_coef, "accuracy"]
+    lr = 1e-4
+
+    # loss='binary_crossentropy'
+    # metrics = ['accuracy']
+    # optimizer = SGD(lr=lr,
+    #                 decay=lr / comms_round,
+    #                 momentum=0.9
+    #                )
+
+
+    # initialize global model
+    global_model = get_model()
+
+
+    # commence global training loop
+    for comm_round in range(comms_round):
+
+        print('comm_round: ' + str(comm_round))
+
+        # get the global model's weights - will serve as the initial weights for all local models
+        global_weights = global_model.get_weights()
+
+        # initial list to collect local model weights after scalling
+        scaled_local_weight_list = list()
+
+        # randomize client data - using keys
+        client_names = list(clients_batched.keys())
+        random.shuffle(client_names)
+
+        # loop through each client and create new local model
+        nbrclients = int(frac * len(client_names))
+        for client in client_names[:nbrclients]:
+            local_model = get_model()
+            local_model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
+
+            # set local model weight to the weight of the global model
+            local_model.set_weights(global_weights)
+
+            # fit local model with client's data
+            local_model.fit(clients_batched[client], epochs=epo, verbose=0)
+
+            # scale the model weights and add to list
+            scaling_factor = weight_scalling_factor(clients_batched, client, frac)
+            scaled_weights = scale_model_weights(local_model.get_weights(), scaling_factor)
+            scaled_local_weight_list.append(scaled_weights)
+
+            # clear session to free memory after each communication round
+            K.clear_session()
+
+
+        # to get the average over all the local model, we simply take the sum of the scaled weights
+        average_weights = sum_scaled_weights(scaled_local_weight_list)
+
+        # update global model
+        global_model.set_weights(average_weights)
+
+        # process and batch the test se
+        test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
+
+        # test global model and print out metrics after each communications round
+        for (X_test, Y_test) in test_batched:
+            global_acc = test_model(X_test, Y_test, global_model)
+
+        print('Accuracy after {} rounds = {}'.format(comm_round, global_acc))
+
+    print("FINAL ACCURACY: " + str(global_acc))
+
+    return global_model
+
 
 
 

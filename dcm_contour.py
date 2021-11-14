@@ -526,4 +526,4 @@ def merge_masks_lungs_forall(general_path):
 # create_mask_only_forall(general_path, 'Lung-Right')
 # create_image_mask_forall(general_path, 'GTV-1')
 # store_array_forall(general_path, 'GTV-1')
-merge_masks_lungs_forall(general_path)
+# merge_masks_lungs_forall(general_path)

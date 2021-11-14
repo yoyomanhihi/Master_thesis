@@ -7,15 +7,26 @@ client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001'
 
 def build_and_save():
     x_train, y_train, x_test, y_test = utils.prepareTrainTest('unet_dataset_bigtumors_first50.pickle')
-    print(np.shape(y_train))
     x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
     y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
     #
-    model = utils.simpleSGD_2d(x_train, y_train, x_test, y_test)
+    model = utils.simpleSGD(x_train, y_train)
     #
     model.save('unet_model_bigtumors_first50_50epochs.h5')
 
     # print(utils.segmentation_2d(model, client_path, 37, "tumor"))
+
+
+def build_and_save_fedavg():
+    datasetpath1 = 'unet_dataset_lungs_first10.pickle'
+    datasetpath2 = 'unet_dataset_lungs_11-20.pickle'
+    listdatasetspaths = [datasetpath1, datasetpath2]
+
+    clients, x_test, y_test = utils.createClients(listdatasetspaths)
+
+    model = utils.fedAvg(clients, x_test, y_test)
+
+    model.save('fedAvg_model.h5')
 
 
 def load_and_segment():
@@ -27,5 +38,8 @@ def load_and_segment():
     print(utils.segmentation_2d(model, client_path, 37, "lungs"))
 
 
+
+
 # build_and_save()
-load_and_segment()
+build_and_save_fedavg()
+# load_and_segment()
