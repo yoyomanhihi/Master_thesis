@@ -1,3 +1,5 @@
+import tensorflow
+
 import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
@@ -6,7 +8,12 @@ import numpy as np
 client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001'
 
 def build_and_save():
-    x_train, y_train, x_test, y_test = utils.prepareTrainTest('unet_dataset_bigtumors_first50.pickle')
+    physical_devices = tf.config.list_physical_devices('GPU')
+    print(physical_devices)
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    # tf.config.set_visible_devices([], 'GPU')
+
+    x_train, y_train, x_test, y_test = utils.prepareTrainTest('unet_dataset_lungs_first50.pickle')
     x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
     y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
     #
@@ -18,6 +25,7 @@ def build_and_save():
 
 
 def build_and_save_fedavg():
+
     datasetpath1 = 'unet_dataset_lungs_first10.pickle'
     datasetpath2 = 'unet_dataset_lungs_11-20.pickle'
     listdatasetspaths = [datasetpath1, datasetpath2]
@@ -40,6 +48,6 @@ def load_and_segment():
 
 
 
-# build_and_save()
-build_and_save_fedavg()
+build_and_save()
+# build_and_save_fedavg()
 # load_and_segment()

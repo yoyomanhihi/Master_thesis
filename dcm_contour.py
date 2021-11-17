@@ -409,12 +409,12 @@ def create_mask_files_only(path, index_name, img_format='png'):
     Y = np.array(Y)
     # Create images and masks folders
     new_path = '/'.join(path.split('/')[:-2])
-    masks_dir = new_path + '/masks_Lung_Right/'
+    masks_dir = new_path + '/masks_Lung_Left/' #CHECK
     if os.path.exists(masks_dir):
         shutil.rmtree(masks_dir)
     os.makedirs(masks_dir)
     for i in range(len(images)):
-        plt.imsave(new_path + f'/masks_Lung_Right/mask_{i}.{img_format}', Y[i, :, :])
+        plt.imsave(new_path + f'/masks_Lung_Left/mask_{i}.{img_format}', Y[i, :, :])
 
 
 
@@ -523,7 +523,7 @@ def merge_masks_lungs_forall(general_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'Lung-Right')
+# create_mask_only_forall(general_path, 'Lung-Left')
 # create_image_mask_forall(general_path, 'GTV-1')
 # store_array_forall(general_path, 'GTV-1')
 # merge_masks_lungs_forall(general_path)

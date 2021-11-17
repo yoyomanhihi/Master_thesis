@@ -22,7 +22,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from keras.layers.advanced_activations import LeakyReLU
-import tensorlayer as tl
 import random
 
 
@@ -177,7 +176,7 @@ def simpleSGD(x_train, y_train):
 
     # Train the model, doing validation at the end of each epoch.
     epochs = 50 #CHECK
-    model.fit(x_train, y_train, batch_size=16, epochs=epochs) # CHECK callbacks
+    model.fit(x_train, y_train, batch_size=1, epochs=epochs) # CHECK callbacks
 
 
     return model
