@@ -11,6 +11,7 @@ import seaborn
 
 #yellow = 215, purple = 30
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
+storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 
 MEAN = -741.7384087183515
 STD = 432.83608694943786
@@ -43,9 +44,9 @@ def getZ(dcm_path):
 
 
 
-def storeDataset(dataset, name):
+def storeDataset(dataset, dir):
     """ Store the dataset as a pickle file"""
-    with open(name, 'wb') as output:
+    with open(dir, 'wb') as output:
         pickle.dump(dataset, output)
 
 
@@ -73,39 +74,34 @@ def generateDatasetFromOneClient(masks_path, arrays_path):
     return data
 
 
-def generateDatasetFromManyClients(general_path, nbclients):
+def generateDatasetFromManyClients(storing_path, organ, nbclients):
+    arrays_path = storing_path + "/arrays"
+    masks_path = storing_path + "/masks_" + organ
     dataset = []
-    files = os.listdir(general_path)
+    files = os.listdir(masks_path)
     files.sort()
     size = min(nbclients, len(files) - 2)
-    for f in files[:size]:
-        if f != 'LICENSE':
-            newpath = general_path + "/" + f
-            print(newpath)
-            arrays_path = newpath + "/arrays"
-            masks_path = newpath + "/masks_Lungs" # CHECK
-            dcm_file = os.listdir(newpath)[0]
-            dcm_path = newpath + "/" + dcm_file
-            dcm_files2 = os.listdir(dcm_path)
-            for dcm_file2 in dcm_files2:
-                dcm_path2 = dcm_path + "/" + dcm_file2
-                if len(os.listdir(dcm_path2)) > 5:
-                    break
-            dataset.extend(generateDatasetFromOneClient(masks_path, arrays_path))
+    for patient in files[:size]:
+        masks_path2 = masks_path + "/" + patient
+        print(masks_path2)
+        arrays_path2 = arrays_path + "/" + patient
+        print(arrays_path2)
+        dataset.extend(generateDatasetFromOneClient(masks_path2, arrays_path2))
     return dataset
 
 
-def generateAndStore(name, nbclients):
+def generateAndStore(name, organ, nbclients):
     ''' Generate a dataset from many clients and store it in the files
         args:
             name: name of the file to save
             nbclients: number of clients to be considered to create the dataset
-        return:
+        retu
             evalutation: tuple of the form (count0, count1)
             count0: number of non tumor examples
             count1: number of tumor examples'''
-    dataset = generateDatasetFromManyClients(general_path, nbclients=nbclients)
-    storeDataset(dataset, name)
+    dataset = generateDatasetFromManyClients(storing_path, organ, nbclients)
+    dir = "datasets/" + str(name)
+    storeDataset(dataset, dir)
 
 
-# generateAndStore("unet_dataset_lungs_first50.pickle", 50)
+# generateAndStore("unet_dataset_heart_first50_1of3_geq8000000.pickle", "heart", 50)

@@ -11,7 +11,7 @@ def build_and_save():
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    x_train, y_train, x_test, y_test = utils.prepareTrainTest('unet_dataset_lungs_first50.pickle')
+    x_train, y_train, x_test, y_test = utils.prepareTrainTest('datasets/unet_dataset_heart_first50_1of3_geq8000000.pickle')
     x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
     y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
     #
@@ -46,6 +46,6 @@ def load_and_segment():
 
 
 
-# build_and_save()
+build_and_save()
 # build_and_save_fedavg()
-load_and_segment()
+# load_and_segment()

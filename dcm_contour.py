@@ -395,7 +395,7 @@ def create_mask_files_only(path, index_name, img_format='png'):
         # Create images and masks folders
         patient = path.split('/')[-3]
         new_path = '/'.join(path.split('/')[:-4])
-        masks_dir = new_path + '/masks_lung_right/' + patient #CHECK
+        masks_dir = new_path + '/masks_heart/' + patient #CHECK
         if os.path.exists(masks_dir):
             shutil.rmtree(masks_dir)
         os.makedirs(masks_dir)
@@ -509,7 +509,7 @@ def merge_masks_lungs_forall(storing_path):
 #             print(im.shape)
 
 
-create_mask_only_forall(general_path, 'Heart')
+# create_mask_only_forall(general_path, 'Heart')
 # create_images_forall(general_path)
 # store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)
