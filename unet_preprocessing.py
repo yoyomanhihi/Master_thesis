@@ -104,4 +104,4 @@ def generateAndStore(name, organ, nbclients):
     storeDataset(dataset, dir)
 
 
-# generateAndStore("unet_dataset_heart_first50_1of3_geq8000000.pickle", "heart", 50)
+# generateAndStore("heart_first50_1of3_geq8000000.pickle", "heart", 50)

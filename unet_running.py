@@ -3,7 +3,12 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 
-client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-061'
+client_nbr = 124
+img_nbr = 28
+organ = "heart"
+client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-' + str(client_nbr)
+mask_path = 'NSCLC-Radiomics/manifest-1603198545583/masks_' + str(organ) + "/LUNG1-" + str(client_nbr) + "/mask_" + str(img_nbr) + ".png"
+array_path = 'NSCLC-Radiomics/manifest-1603198545583/arrays/LUNG1-' + str(client_nbr) + '/array_' + str(img_nbr) + ".npy"
 
 def build_and_save():
     physical_devices = tf.config.list_physical_devices('GPU')
@@ -11,7 +16,7 @@ def build_and_save():
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    x_train, y_train, x_test, y_test = utils.prepareTrainTest('datasets/unet_dataset_heart_first50_1of3_geq8000000.pickle')
+    x_train, y_train, x_test, y_test = utils.prepareTrainTest('datasets/heart_first50_1of3_geq8000000.pickle')
     x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
     y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
     #
@@ -37,15 +42,15 @@ def build_and_save_fedavg():
 
 def load_and_segment():
 
-    model = keras.models.load_model('unet_model_lungs_fedavg.h5', compile=False)
+    model = keras.models.load_model('models/heart_first50_1of3_geq8000000.h5', compile=False)
 
     # SGD_acc = utils.test_model(x_test, y_test, model)
 
-    print(utils.segmentation_2d(model, client_path, 60, "lungs"))
+    print(utils.segmentation_2d(model, client_path, mask_path, array_path, img_nbr, organ))
 
 
 
 
-build_and_save()
+# build_and_save()
 # build_and_save_fedavg()
-# load_and_segment()
+load_and_segment()

@@ -175,7 +175,7 @@ def simpleSGD(x_train, y_train):
     model.summary()
 
     # Train the model, doing validation at the end of each epoch.
-    epochs = 50 #CHECK
+    epochs = 10 #CHECK
     model.fit(x_train, y_train, batch_size=1, epochs=epochs) # CHECK callbacks
 
 
@@ -354,6 +354,39 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
 
 
 
+def show_rtstruct(organ, dcm_path, img_nbr):
+    if organ == "tumor":
+        # plot the rt struct of the image
+        index = dcm_contour.get_index(dcm_path, "GTV-1")
+        images, contours, _ = dcm_contour.get_data(dcm_path, index=index)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
+            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+        contours = np.array(contours)
+        cntr = contours[img_nbr, 0]
+    elif organ == "heart":
+        index = dcm_contour.get_index(dcm_path, "Heart")
+        images, contours, _ = dcm_contour.get_data(dcm_path, index=index)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
+            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+        cntr = contours[img_nbr][0]
+        for i in range(1, len(contours[img_nbr])):
+            cntr += contours[img_nbr][i]
+    elif organ == "lungs":
+        index1 = dcm_contour.get_index(dcm_path, "Lung-Left")
+        index2 = dcm_contour.get_index(dcm_path, "Lung-Right")
+        images, contours1, _ = dcm_contour.get_data(dcm_path, index=index1)
+        images2, contours2, _ = dcm_contour.get_data(dcm_path, index=index2)
+        for i in range(len(contours1)):
+            contours1[i] = np.append(contours1[i], contours2[i], axis=0)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours1[img_nbr:img_nbr + 1]):
+            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+        cntr = contours1[img_nbr][0]
+        for i in range(1, len(contours1[img_nbr])):
+            cntr += contours1[img_nbr][i]
+    plt.show()
+    return cntr
+
+
 
 def heatMap(predictions):
     """ Plot the heat map of the tumor predictions"""
@@ -383,7 +416,7 @@ def finalPrediction(cntr, predictions):
 
 
 
-def segmentation_2d(model, client_path, img_nbr, zone):
+def segmentation_2d(model, client_path, mask_path, array_path, img_nbr, organ):
     ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
         args:
             model: model used for predictions
@@ -399,28 +432,8 @@ def segmentation_2d(model, client_path, img_nbr, zone):
         if len(os.listdir(dcm_path)) > 5:
             break
 
-    if zone == "tumor":
-        # plot the rt struct of the image
-        index = dcm_contour.get_index(dcm_path, "GTV-1")
-        images, contours, _ = dcm_contour.get_data(dcm_path, index=index)
-        for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
-            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
-        cntr = contours[img_nbr]
-    elif zone == "lungs":
-        index1 = dcm_contour.get_index(dcm_path, "Lung-Left")
-        index2 = dcm_contour.get_index(dcm_path, "Lung-Right")
-        images, contours1, _ = dcm_contour.get_data(dcm_path, index=index1)
-        images2, contours2, _ = dcm_contour.get_data(dcm_path, index=index2)
-        for i in range(len(contours1)):
-            contours1[i] = np.append(contours1[i], contours2[i], axis=0)
-        for img_arr, contour_arr in zip(images[img_nbr:img_nbr + 1], contours1[img_nbr:img_nbr + 1]):
-            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
-        cntr = contours1[img_nbr][0]
-        for i in range(1, len(contours1[img_nbr])):
-            cntr += contours1[img_nbr][i]
-    plt.show()
+    cntr = show_rtstruct(organ, dcm_path, img_nbr)
 
-    array_path = client_path + "/arrays/array_" + str(img_nbr) + ".npy"
     array = np.load(array_path)
     array = array - MEAN
     array = array / STD
@@ -432,10 +445,6 @@ def segmentation_2d(model, client_path, img_nbr, zone):
 
     finalPrediction(cntr, predictions)
 
-    if zone == "tumor":
-        mask_path = client_path + "/masks/mask_" + str(img_nbr) + ".png"
-    elif zone == "lungs":
-        mask_path = client_path + "/masks_Lungs/mask_" + str(img_nbr) + ".png"
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
     mask[mask < 40] = 0  # Set out of tumor to 0
     mask[mask > 210] = 1  # Set out of tumor to 1
