@@ -1,11 +1,9 @@
-import tensorflow
-
 import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 
-client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001'
+client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-061'
 
 def build_and_save():
     physical_devices = tf.config.list_physical_devices('GPU')
@@ -39,15 +37,15 @@ def build_and_save_fedavg():
 
 def load_and_segment():
 
-    model = keras.models.load_model('unet_model_Lungs_first5.h5', compile=False)
+    model = keras.models.load_model('unet_model_lungs_fedavg.h5', compile=False)
 
     # SGD_acc = utils.test_model(x_test, y_test, model)
 
-    print(utils.segmentation_2d(model, client_path, 37, "lungs"))
+    print(utils.segmentation_2d(model, client_path, 60, "lungs"))
 
 
 
 
-build_and_save()
+# build_and_save()
 # build_and_save_fedavg()
-# load_and_segment()
+load_and_segment()

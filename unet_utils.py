@@ -358,10 +358,10 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
 def heatMap(predictions):
     """ Plot the heat map of the tumor predictions"""
     fig, ax = plt.subplots()
-    title = "Prediction heatmap"
-    plt.title(title, fontsize=18)
-    ttl = ax.title
-    ttl.set_position([0.5, 1.05])
+    # title = "Prediction heatmap"
+    # plt.title(title, fontsize=18)
+    # ttl = ax.title
+    # ttl.set_position([0.5, 1.05])
     ax.set_xticks([])
     ax.set_yticks([])
     ax.axis('off')
@@ -371,13 +371,13 @@ def heatMap(predictions):
 
 
 
-def finalPrediction(cntr, predictions, zone):
+def finalPrediction(cntr, predictions):
     for i in range(len(predictions)):
         for j in range(len(predictions[i])):
             if predictions[(i, j)] >= 0.5 and cntr[(i, j)] != 1:
                 cntr[(i, j)] = 10
-    title = zone + " prediction"
-    plt.title(title, fontsize=18)
+    # title = zone + " prediction"
+    # plt.title(title, fontsize=18)
     plt.imshow(cntr)
     plt.show()
 
@@ -417,7 +417,6 @@ def segmentation_2d(model, client_path, img_nbr, zone):
             dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
         cntr = contours1[img_nbr][0]
         for i in range(1, len(contours1[img_nbr])):
-            print("ici")
             cntr += contours1[img_nbr][i]
     plt.show()
 
@@ -431,7 +430,7 @@ def segmentation_2d(model, client_path, img_nbr, zone):
 
     heatMap(predictions)
 
-    finalPrediction(cntr, predictions, zone)
+    finalPrediction(cntr, predictions)
 
     if zone == "tumor":
         mask_path = client_path + "/masks/mask_" + str(img_nbr) + ".png"
