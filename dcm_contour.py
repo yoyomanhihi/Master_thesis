@@ -427,7 +427,7 @@ def create_mask_only_forall(general_path, index_name):
 
 
 
-def store_array(path, index_name):
+def store_array(path):
     """
     Create image and corresponding mask files under to folders '/images' and '/masks'
     in the parent directory of path.
@@ -437,8 +437,7 @@ def store_array(path, index_name):
         img_format (str): image format to save by, png by default
     """
     # Extract Arrays from DICOM
-    index = get_index(path, index_name)
-    X, _, _ = get_data(path, index)
+    X, _, _ = get_data(path, 0) # Make sure to read the data
     # Create images and masks folders
 
     patient = path.split('/')[-3]
@@ -452,7 +451,7 @@ def store_array(path, index_name):
 
 
 
-def store_array_forall(general_path, index_name):
+def store_array_forall(general_path):
     """ Create images and masks folders for every patient
         args:
             general_path: path to the folder including all patients
@@ -471,7 +470,7 @@ def store_array_forall(general_path, index_name):
                         newpath3 = newpath2 + "/" + f3
                         newfiles3 = os.listdir(newpath3)
                         if len(newfiles3) > 5:
-                            store_array(newpath3, index_name)
+                            store_array(newpath3)
 
 
 
@@ -510,7 +509,7 @@ def merge_masks_lungs_forall(storing_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'Lung-Right')
-create_images_forall(general_path)
-# store_array_forall(general_path, 'GTV-1')
+create_mask_only_forall(general_path, 'Heart')
+# create_images_forall(general_path)
+# store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)
