@@ -16,13 +16,11 @@ def build_and_save():
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    x_train, y_train, x_test, y_test = utils.prepareTrainTest('datasets/heart_first50_1of3_geq8000000.pickle')
-    x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
-    y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
-    #
-    model = utils.simpleSGD(x_train, y_train)
-    #
-    model.save('unet_model_bigtumors_first50_50epochs.h5')
+    x_train, y_train = utils.prepareTrainingData('datasets/smallfortest.pickle')
+
+    model = utils.simpleSGD(x_train, y_train, epochs=200)
+
+    # model.save('unet_model_bigtumors_first50_50epochs.h5')
 
     # print(utils.segmentation_2d(model, client_path, 37, "tumor"))
 
@@ -51,6 +49,6 @@ def load_and_segment():
 
 
 
-# build_and_save()
+build_and_save()
 # build_and_save_fedavg()
-load_and_segment()
+# load_and_segment()

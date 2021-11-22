@@ -9,6 +9,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.callbacks import History
 import keras
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
@@ -23,6 +24,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from keras.layers.advanced_activations import LeakyReLU
 import random
+import plots
 
 
 
@@ -59,22 +61,19 @@ def load(path):
         return data
 
 
-def prepareTrainTest(dataset_path):
+def prepareTrainingData(dataset_path):
     dataset = load(dataset_path)
     dataset = np.array(dataset)
     np.random.shuffle(dataset)
     size = len(dataset)
-    train_size = int(0.8 * size)
-    inputs = []
-    outputs = []
+    x_train = []
+    y_train = []
     for elem in dataset:
-        inputs.append(elem[0])
-        outputs.append(elem[1])
-    x_train = inputs[:train_size]
-    y_train = outputs[:train_size]
-    x_test = inputs[train_size:]
-    y_test = outputs[train_size:]
-    return x_train, y_train, x_test, y_test
+        x_train.append(elem[0])
+        y_train.append(elem[1])
+    x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
+    y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
+    return x_train, y_train
 
 
 def get_model():
@@ -141,7 +140,7 @@ def test_model(x_test, y_test, model):
 
 
 
-def simpleSGD(x_train, y_train):
+def simpleSGD(x_train, y_train, epochs):
     ''' Simple SGD algorithm for 32x32 images
         args:
             x_train: training images
@@ -155,17 +154,20 @@ def simpleSGD(x_train, y_train):
     '''
 
 
-    # checkpointer = ModelCheckpoint('unet_model_Lungs_first5_temp.h5', verbose=1, save_best_only=True)
-    #
-    # callbacks = [
-    #     EarlyStopping(patience=3, monitor='val_loss'),
-    #     TensorBoard(log_dir='logs'),
-    #     checkpointer
-    # ]
+    checkpointer = ModelCheckpoint('test_checkpointer.h5', verbose=1, save_best_only=True)
+
+    history = History()
+
+    callbacks = [
+        EarlyStopping(patience=10, monitor='val_loss', mode=min),
+        TensorBoard(log_dir='logs'),
+        history,
+        checkpointer,
+    ]
 
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss
-    metrics = [dice_coef, "accuracy"]
+    metrics = [dice_coef]
     lr = 1e-4
 
     model = get_model()
@@ -175,8 +177,11 @@ def simpleSGD(x_train, y_train):
     model.summary()
 
     # Train the model, doing validation at the end of each epoch.
-    epochs = 10 #CHECK
-    model.fit(x_train, y_train, batch_size=1, epochs=epochs) # CHECK callbacks
+    epochs = epochs
+    hist = model.fit(x_train, y_train, validation_split=0.2, batch_size=1, epochs=epochs, callbacks=callbacks)
+    # print((hist.history['val_dice_coef']))
+
+    plots.history(hist)
 
 
     return model
@@ -196,7 +201,7 @@ def createClients(listdatasetspaths):
     y_test = []
     clientnbr = 0
     for datasetpath in listdatasetspaths:
-        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest(datasetpath)
+        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainingData(datasetpath)
         clientname = "client_" + str(clientnbr)
         data = list(zip(x_train_client, y_train_client))
         clients[clientname] = data

@@ -19,6 +19,14 @@ contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 
+# dcm_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1/interobs05/02-18-2019-NA-CT-90318/NA-28629"
+# general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
+# contour_path = 'NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1/interobs05/02-18-2019-NA-CT-90318/NA-28629/1-1.dcm'
+# storing_path = "NSCLC-Radiomics-Interobserver1"
+
+
+
+
 contour_data = dicom.read_file(contour_path)
 
 
@@ -509,7 +517,7 @@ def merge_masks_lungs_forall(storing_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'Heart')
+# create_mask_only_forall(general_path, 'treshold-pr')
 # create_images_forall(general_path)
 # store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)

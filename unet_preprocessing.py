@@ -79,6 +79,7 @@ def generateDatasetFromManyClients(storing_path, organ, nbclients):
     masks_path = storing_path + "/masks_" + organ
     dataset = []
     files = os.listdir(masks_path)
+    print(len(files))
     files.sort()
     size = min(nbclients, len(files) - 2)
     for patient in files[:size]:
@@ -104,4 +105,4 @@ def generateAndStore(name, organ, nbclients):
     storeDataset(dataset, dir)
 
 
-# generateAndStore("heart_first50_1of3_geq8000000.pickle", "heart", 50)
+# generateAndStore("smallfortest.pickle", "heart", 5)
