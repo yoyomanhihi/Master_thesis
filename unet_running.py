@@ -35,7 +35,7 @@ def build_and_save_fedavg():
 
     model = utils.fedAvg(clients, x_test, y_test)
 
-    model.save('fedAvg_model.h5')
+    # model.save('fedAvg_model.h5')
 
 
 def load_and_segment():

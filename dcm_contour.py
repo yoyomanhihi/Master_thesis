@@ -524,5 +524,5 @@ def merge_masks_lungs_forall(storing_path):
 
 # create_mask_only_forall(general_path, 'Esophagus')
 # create_images_forall(general_path)
-store_array_forall(general_path)
+# store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)

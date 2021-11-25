@@ -74,6 +74,24 @@ def prepareTrainingData(dataset_path):
     return x_train, y_train
 
 
+def prepareTrainTest(dataset_path):
+    dataset = load(dataset_path)
+    dataset = np.array(dataset)
+    np.random.shuffle(dataset)
+    size = len(dataset)
+    train_size = int(0.8 * size)
+    inputs = []
+    outputs = []
+    for elem in dataset:
+        inputs.append(elem[0])
+        outputs.append(elem[1])
+    x_train = inputs[:train_size]
+    y_train = outputs[:train_size]
+    x_test = inputs[train_size:]
+    y_test = outputs[train_size:]
+    return x_train, y_train, x_test, y_test
+
+
 def get_model():
     inputs = Input((512, 512, 1))
     conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
@@ -176,7 +194,7 @@ def simpleSGD(x_train, y_train, epochs):
 
     # Train the model, doing validation at the end of each epoch.
     epochs = epochs
-    hist = model.fit(x_train, y_train, validation_split=0.2, shuffle=True, batch_size=3, epochs=epochs, callbacks=callbacks)
+    hist = model.fit(x_train, y_train, validation_split=0.2, shuffle=True, batch_size=1, epochs=epochs, callbacks=callbacks)
     # print((hist.history['val_dice_coef']))
 
     plots.history(hist)
@@ -199,7 +217,7 @@ def createClients(listdatasetspaths):
     y_test = []
     clientnbr = 0
     for datasetpath in listdatasetspaths:
-        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainingData(datasetpath)
+        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest(datasetpath)
         clientname = "client_" + str(clientnbr)
         data = list(zip(x_train_client, y_train_client))
         clients[clientname] = data
@@ -277,6 +295,9 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
                 global_acc: the global accuracy after comms_round rounds
     '''
 
+    best_glocal_acc = 0
+    patience_wait = 0
+
     # process and batch the training data for each client
     clients_batched = dict()
     for (client_name, data) in clients.items():
@@ -340,6 +361,20 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
         # test global model and print out metrics after each communications round
         for (X_test, Y_test) in test_batched:
             global_acc = test_model(X_test, Y_test, global_model)
+
+            # If best acc so far
+            if global_acc > best_glocal_acc:
+                print("Dice score improved: from " + str(best_glocal_acc) + " to: " + str(global_acc))
+                best_glocal_acc = global_acc
+                patience_wait = 0
+                global_model.save('fedAvg_best_model.h5')
+            else:
+                print("Dice score didn't improve, got a dice score of " + str(global_acc) + " but best is still " + str(best_glocal_acc) )
+                patience_wait += 1
+
+
+        if patience_wait >= 10:
+            break
 
         print('Accuracy after {} rounds = {}'.format(comm_round, global_acc))
 
