@@ -100,6 +100,11 @@ def parse_dicom_file(filename):
 
         if intercept != 0.0 and slope != 0.0:
             dcm_image = dcm_image*slope + intercept
+
+        # set outside scanner to air
+        outside_image = np.min(dcm_image)
+        dcm_image[dcm_image == outside_image] = -1000
+
         return dcm_image
     except InvalidDicomError:
         return None
@@ -300,7 +305,7 @@ def get_data(path, index):
     return np.array(images), np.array(contours), np.array(masks)
 
 
-# images, contours = get_data(dcm_path, index=0) #CHECK
+# images, contours = get_data(dcm_path, index=0)
 #
 #
 # for img_arr, contour_arr in zip(images[79:80], contours[79:80]):
@@ -348,7 +353,7 @@ def create_images_files(path, img_format='png'):
         shutil.rmtree(images_dir)
     os.makedirs(images_dir)
     for i in range(len(images)):
-        plt.imsave(images_dir + f'/image_{i}.{img_format}', images[i, :, :])
+        plt.imsave(images_dir + f'/image_{i}.{img_format}', images[i, :, :], cmap="gray")
 
 
 
@@ -359,7 +364,7 @@ def create_images_forall(general_path):
             index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
-    for folder in patients_folders: #CHECK
+    for folder in patients_folders:
         newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
@@ -403,7 +408,7 @@ def create_mask_files_only(path, index_name, img_format='png'):
         # Create images and masks folders
         patient = path.split('/')[-3]
         new_path = '/'.join(path.split('/')[:-4])
-        masks_dir = new_path + '/masks_heart/' + patient #CHECK
+        masks_dir = new_path + '/masks_esophagus/' + patient #CHECK
         if os.path.exists(masks_dir):
             shutil.rmtree(masks_dir)
         os.makedirs(masks_dir)
@@ -517,7 +522,7 @@ def merge_masks_lungs_forall(storing_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'treshold-pr')
+# create_mask_only_forall(general_path, 'Esophagus')
 # create_images_forall(general_path)
-# store_array_forall(general_path)
+store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)

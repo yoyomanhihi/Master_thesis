@@ -74,6 +74,7 @@ def transform_to_hu(slices):
     # convert to HU
     for n in range(len(slices)):
 
+        print(slices[n].PatientID)
         intercept = slices[n].RescaleIntercept
         slope = slices[n].RescaleSlope
 
@@ -393,48 +394,61 @@ def resize_volume(img):
 
 # Some constants
 # INPUT_FOLDER = "NSCLC2 - Lung_Cancers3/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331"
-INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
+# INPUT_FOLDER = 'OrganisedLung2 - LCTSC'
 # INPUT_FOLDER = 'OrganisedLung - NSCLS-Radomics-Interobserver1'
+INPUT_FOLDER = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
 patients = listdir(INPUT_FOLDER)
 patients.sort()
 MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
 
+# FILE = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1.3.6.1.4.1.32722.99.99.104776423223073991273677458347669148913.dcm"
+FILE = "manifest-24SKnD3z882383218506680143/RIDER Lung CT/RIDER-1129164940/09-20-2006-1-NA-96508/4.000000-NA-24533/1-001.dcm"
 
-def make_all(allscans):
-    for i in range(len(allscans)):
-        first_patient = allscans[i]
-        hu_scans = transform_to_hu(first_patient)
-        segmented_lungs_closed = segment_lung_mask_closed(hu_scans)
-        plot_3d(segmented_lungs_closed, threshold=-600)
+dataset = pydicom.dcmread(FILE)
+print(dataset.ImagePositionPatient)
+print(np.shape(dataset.pixel_array))
+plt.imshow(dataset.pixel_array, cmap="gray")
+plt.show()
 
+hu = transform_to_hu([dataset])
+plt.imshow(hu[0], cmap="gray")
+plt.show()
 
-def save_HU(allscans):
-    for i in range(len(allscans)):
-        first_patient = allscans[i]
-        hu_scans = transform_to_hu(first_patient)
-        np.save("Lung_HU/LCTSC/" + str(i), hu_scans)
-
-
-def save_segmented(allscans):
-    PREPROCESSED_FOLDER = "Lung_segmented/LCTSC"
-    for file in listdir(PREPROCESSED_FOLDER):
-        hu_scans = np.load(PREPROCESSED_FOLDER + "/" + file)
-        segmented_lungs_closed = segment_lung_mask_closed(hu_scans)
-        np.save("Lung_segmented/LCTSC/" + str(file), segmented_lungs_closed)
-
-
-def save_resized():
-    PREPROCESSED_FOLDER = "Lung_segmented/LCTSC"
-    for file in listdir(PREPROCESSED_FOLDER):
-        segmented = np.load(PREPROCESSED_FOLDER + "/" + file)
-        resized = resize_volume(segmented)
-        np.save("Lung_resized/LCTSC/" + str(file), resized)
-
-
-allscans = list()
-for file in listdir(INPUT_FOLDER):
-    allscans.append(load_scan(INPUT_FOLDER + '/' + file))
-
-make_all(allscans)
+# def make_all(allscans):
+#     for i in range(len(allscans)):
+#         first_patient = allscans[i]
+#         hu_scans = transform_to_hu(first_patient)
+#         segmented_lungs_closed = segment_lung_mask_closed(hu_scans)
+#         plot_3d(segmented_lungs_closed, threshold=-600)
+#
+#
+# def save_HU(allscans):
+#     for i in range(len(allscans)):
+#         first_patient = allscans[i]
+#         hu_scans = transform_to_hu(first_patient)
+#         np.save("Lung_HU/LCTSC/" + str(i), hu_scans)
+#
+#
+# def save_segmented(allscans):
+#     PREPROCESSED_FOLDER = "Lung_segmented/LCTSC"
+#     for file in listdir(PREPROCESSED_FOLDER):
+#         hu_scans = np.load(PREPROCESSED_FOLDER + "/" + file)
+#         segmented_lungs_closed = segment_lung_mask_closed(hu_scans)
+#         np.save("Lung_segmented/LCTSC/" + str(file), segmented_lungs_closed)
+#
+#
+# def save_resized():
+#     PREPROCESSED_FOLDER = "Lung_segmented/LCTSC"
+#     for file in listdir(PREPROCESSED_FOLDER):
+#         segmented = np.load(PREPROCESSED_FOLDER + "/" + file)
+#         resized = resize_volume(segmented)
+#         np.save("Lung_resized/LCTSC/" + str(file), resized)
+#
+#
+# allscans = list()
+# for file in listdir(INPUT_FOLDER):
+#     allscans.append(load_scan(INPUT_FOLDER + '/' + file))
+#
+# make_all(allscans)

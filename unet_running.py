@@ -16,7 +16,7 @@ def build_and_save():
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    x_train, y_train = utils.prepareTrainingData('datasets/smallfortest.pickle')
+    x_train, y_train = utils.prepareTrainingData('datasets/heart_first395(100)_1of3_geq8000000.pickle')
 
     model = utils.simpleSGD(x_train, y_train, epochs=200)
 

@@ -64,8 +64,6 @@ def load(path):
 def prepareTrainingData(dataset_path):
     dataset = load(dataset_path)
     dataset = np.array(dataset)
-    np.random.shuffle(dataset)
-    size = len(dataset)
     x_train = []
     y_train = []
     for elem in dataset:
@@ -154,12 +152,12 @@ def simpleSGD(x_train, y_train, epochs):
     '''
 
 
-    checkpointer = ModelCheckpoint('test_checkpointer.h5', verbose=1, save_best_only=True)
+    checkpointer = ModelCheckpoint('best_val_loss.h5', verbose=1, save_best_only=True)
 
     history = History()
 
     callbacks = [
-        EarlyStopping(patience=10, monitor='val_loss', mode=min),
+        EarlyStopping(patience=20, monitor='val_loss', mode=min),
         TensorBoard(log_dir='logs'),
         history,
         checkpointer,
@@ -172,13 +170,13 @@ def simpleSGD(x_train, y_train, epochs):
 
     model = get_model()
 
-    model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
+    model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics) # Check
 
     model.summary()
 
     # Train the model, doing validation at the end of each epoch.
     epochs = epochs
-    hist = model.fit(x_train, y_train, validation_split=0.2, batch_size=1, epochs=epochs, callbacks=callbacks)
+    hist = model.fit(x_train, y_train, validation_split=0.2, shuffle=True, batch_size=3, epochs=epochs, callbacks=callbacks)
     # print((hist.history['val_dice_coef']))
 
     plots.history(hist)
@@ -289,14 +287,6 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
     loss_metric = dice_coef_loss
     metrics = [dice_coef, "accuracy"]
     lr = 1e-4
-
-    # loss='binary_crossentropy'
-    # metrics = ['accuracy']
-    # optimizer = SGD(lr=lr,
-    #                 decay=lr / comms_round,
-    #                 momentum=0.9
-    #                )
-
 
     # initialize global model
     global_model = get_model()
