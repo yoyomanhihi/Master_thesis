@@ -1,3 +1,4 @@
+import gc
 import pickle
 import numpy as np
 from tensorflow.keras.layers import Conv2D
@@ -146,12 +147,13 @@ def test_model(x_test, y_test, model):
     nbrelems = 0
     test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
     for (X_test, Y_test) in test_batched:
-        predictions = model.predict(X_test)
+        predictions = model.predict(X_test, batch_size=1)
         Y_test = np.array(Y_test)
         for i in range(len(Y_test)):
             coef = dice_coef_2(Y_test[i], predictions[i])
             score += coef
             nbrelems += 1
+        K.clear_session()
     return score / nbrelems
 
 
@@ -175,7 +177,7 @@ def simpleSGD(x_train, y_train, epochs):
     history = History()
 
     callbacks = [
-        EarlyStopping(patience=20, monitor='val_loss', mode=min),
+        EarlyStopping(patience=15, monitor='val_loss', mode=min),
         TensorBoard(log_dir='logs'),
         history,
         checkpointer,
@@ -196,6 +198,8 @@ def simpleSGD(x_train, y_train, epochs):
     epochs = epochs
     hist = model.fit(x_train, y_train, validation_split=0.2, shuffle=True, batch_size=1, epochs=epochs, callbacks=callbacks)
     # print((hist.history['val_dice_coef']))
+
+    test_model(x_train, y_train, model)
 
     plots.history(hist)
 
@@ -228,7 +232,7 @@ def createClients(listdatasetspaths):
 
 
 
-def batch_data(data_shard, bs=32):
+def batch_data(data_shard, bs=1):
     ''' Takes in a clients data shard and create a tfds object off it
         args:
             shard: a data, label constituting a client's data shard
@@ -280,7 +284,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50):
+def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -338,7 +342,7 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
             local_model.set_weights(global_weights)
 
             # fit local model with client's data
-            local_model.fit(clients_batched[client], epochs=epo, verbose=0)
+            local_model.fit(clients_batched[client], epochs=epo, verbose=1)
 
             # scale the model weights and add to list
             scaling_factor = weight_scalling_factor(clients_batched, client, frac)
@@ -347,6 +351,7 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
 
             # clear session to free memory after each communication round
             K.clear_session()
+            gc.collect()
 
 
         # to get the average over all the local model, we simply take the sum of the scaled weights
@@ -371,9 +376,10 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 50)
             else:
                 print("Dice score didn't improve, got a dice score of " + str(global_acc) + " but best is still " + str(best_glocal_acc) )
                 patience_wait += 1
+            print("patience_wait = " + str(patience_wait))
 
 
-        if patience_wait >= 10:
+        if patience_wait >= 15:
             break
 
         print('Accuracy after {} rounds = {}'.format(comm_round, global_acc))

@@ -82,7 +82,7 @@ def generateDatasetFromManyClients(storing_path, organ, nbclients):
     print(len(files))
     files.sort()
     size = min(nbclients, len(files) - 2)
-    for patient in files[:size]:
+    for patient in files[:size]: # CHECK
         masks_path2 = masks_path + "/" + patient
         print(masks_path2)
         arrays_path2 = arrays_path + "/" + patient
@@ -105,4 +105,4 @@ def generateAndStore(name, organ, nbclients):
     storeDataset(dataset, dir)
 
 
-# generateAndStore("smallfortest.pickle", "heart", 5)
+# generateAndStore("smallfortest3.pickle", "heart", 90)

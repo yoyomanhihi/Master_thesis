@@ -16,9 +16,9 @@ def build_and_save():
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    x_train, y_train = utils.prepareTrainingData('datasets/heart_first395(100)_1of3_geq8000000.pickle')
+    x_train, y_train = utils.prepareTrainingData('datasets/smallfortest1.pickle')
 
-    model = utils.simpleSGD(x_train, y_train, epochs=200)
+    model = utils.simpleSGD(x_train, y_train, epochs=1)
 
     # model.save('unet_model_bigtumors_first50_50epochs.h5')
 
@@ -26,9 +26,12 @@ def build_and_save():
 
 
 def build_and_save_fedavg():
+    physical_devices = tf.config.list_physical_devices('GPU')
+    print(physical_devices)
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    datasetpath1 = 'unet_dataset_lungs_first10.pickle'
-    datasetpath2 = 'unet_dataset_lungs_11-20.pickle'
+    datasetpath1 = 'datasets/smallfortest1.pickle'
+    datasetpath2 = 'datasets/smallfortest2.pickle'
     listdatasetspaths = [datasetpath1, datasetpath2]
 
     clients, x_test, y_test = utils.createClients(listdatasetspaths)
@@ -39,8 +42,7 @@ def build_and_save_fedavg():
 
 
 def load_and_segment():
-
-    model = keras.models.load_model('models/heart_first50_1of3_geq8000000.h5', compile=False)
+    model = keras.models.load_model('models/fedAvg_best_model.h5', compile=False)
 
     # SGD_acc = utils.test_model(x_test, y_test, model)
 
@@ -49,6 +51,6 @@ def load_and_segment():
 
 
 
-build_and_save()
+# build_and_save()
 # build_and_save_fedavg()
-# load_and_segment()
+load_and_segment()
