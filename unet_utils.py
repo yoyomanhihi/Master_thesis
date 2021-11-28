@@ -78,7 +78,6 @@ def prepareTrainingData(dataset_path):
 def prepareTrainTest(dataset_path):
     dataset = load(dataset_path)
     dataset = np.array(dataset)
-    np.random.shuffle(dataset)
     size = len(dataset)
     train_size = int(0.8 * size)
     inputs = []
@@ -196,14 +195,12 @@ def simpleSGD(x_train, y_train, epochs):
 
     # Train the model, doing validation at the end of each epoch.
     epochs = epochs
-    hist = model.fit(x_train, y_train, validation_split=0.2, shuffle=True, batch_size=1, epochs=epochs, callbacks=callbacks)
+    hist = model.fit(x_train, y_train, validation_split=0.2, shuffle=True, batch_size=3, epochs=epochs, callbacks=callbacks)
     # print((hist.history['val_dice_coef']))
 
-    test_model(x_train, y_train, model)
+    # test_model(x_train, y_train, model)
 
     plots.history(hist)
-
-
     return model
 
 
@@ -284,7 +281,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200):
+def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200, patience = 15):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -299,7 +296,9 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
                 global_acc: the global accuracy after comms_round rounds
     '''
 
-    best_glocal_acc = 0
+    best_test_acc = 0
+    test_accs = []
+    train_acc = []
     patience_wait = 0
 
     # process and batch the training data for each client
@@ -307,6 +306,11 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
     for (client_name, data) in clients.items():
         clients_batched[client_name] = batch_data(data, bs = bs)
 
+    history = History()
+
+    callbacks = [
+        history,
+    ]
 
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss
@@ -336,13 +340,14 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
         nbrclients = int(frac * len(client_names))
         for client in client_names[:nbrclients]:
             local_model = get_model()
+
             local_model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
 
             # set local model weight to the weight of the global model
             local_model.set_weights(global_weights)
 
             # fit local model with client's data
-            local_model.fit(clients_batched[client], epochs=epo, verbose=1)
+            train_acc = local_model.fit(clients_batched[client], epochs=epo, verbose=1, callbacks=callbacks)
 
             # scale the model weights and add to list
             scaling_factor = weight_scalling_factor(clients_batched, client, frac)
@@ -352,7 +357,6 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
             # clear session to free memory after each communication round
             K.clear_session()
             gc.collect()
-
 
         # to get the average over all the local model, we simply take the sum of the scaled weights
         average_weights = sum_scaled_weights(scaled_local_weight_list)
@@ -365,26 +369,32 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
 
         # test global model and print out metrics after each communications round
         for (X_test, Y_test) in test_batched:
-            global_acc = test_model(X_test, Y_test, global_model)
+            test_acc = test_model(X_test, Y_test, global_model)
+
+            test_accs.append(test_acc)
 
             # If best acc so far
-            if global_acc > best_glocal_acc:
-                print("Dice score improved: from " + str(best_glocal_acc) + " to: " + str(global_acc))
-                best_glocal_acc = global_acc
+            if test_acc > best_test_acc:
+                print("Dice score improved: from " + str(best_test_acc) + " to: " + str(test_acc))
+                best_test_acc = test_acc
                 patience_wait = 0
                 global_model.save('fedAvg_best_model.h5')
             else:
-                print("Dice score didn't improve, got a dice score of " + str(global_acc) + " but best is still " + str(best_glocal_acc) )
+                print("Dice score didn't improve, got a dice score of " + str(test_acc) + " but best is still " + str(best_test_acc) )
                 patience_wait += 1
             print("patience_wait = " + str(patience_wait))
 
 
-        if patience_wait >= 15:
+        if patience_wait >= patience:
             break
 
-        print('Accuracy after {} rounds = {}'.format(comm_round, global_acc))
+        print('Accuracy after {} rounds = {}'.format(comm_round, test_acc))
 
-    print("FINAL ACCURACY: " + str(global_acc))
+    print("FINAL ACCURACY: " + str(test_acc))
+    print(train_acc.history['dice_coef'])
+    print(test_accs)
+
+    plots.history_fedavg(train_acc.history['dice_coef'], test_accs, len(clients))
 
     return global_model
 

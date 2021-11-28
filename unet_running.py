@@ -16,9 +16,9 @@ def build_and_save():
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    x_train, y_train = utils.prepareTrainingData('datasets/smallfortest1.pickle')
+    x_train, y_train = utils.prepareTrainingData('datasets/heart_first60(334)_1of3_geq8000000.pickle')
 
-    model = utils.simpleSGD(x_train, y_train, epochs=1)
+    model = utils.simpleSGD(x_train, y_train, epochs=200)
 
     # model.save('unet_model_bigtumors_first50_50epochs.h5')
 
@@ -30,13 +30,19 @@ def build_and_save_fedavg():
     print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    datasetpath1 = 'datasets/smallfortest1.pickle'
-    datasetpath2 = 'datasets/smallfortest2.pickle'
-    listdatasetspaths = [datasetpath1, datasetpath2]
+    datasetpath1 = 'datasets/heart_first60(334)_1of3_geq8000000_1.pickle'
+    datasetpath2 = 'datasets/heart_first60(334)_1of3_geq8000000_2.pickle'
+    datasetpath3 = 'datasets/heart_first60(334)_1of3_geq8000000_3.pickle'
+
+    # datasetpath1 = 'datasets/smallfortest.pickle'
+    # datasetpath2 = 'datasets/smallfortest.pickle'
+    # datasetpath3 = 'datasets/smallfortest.pickle'
+
+    listdatasetspaths = [datasetpath1, datasetpath2, datasetpath3]
 
     clients, x_test, y_test = utils.createClients(listdatasetspaths)
 
-    model = utils.fedAvg(clients, x_test, y_test)
+    model = utils.fedAvg(clients, x_test, y_test, patience=15)
 
     # model.save('fedAvg_model.h5')
 
@@ -52,5 +58,5 @@ def load_and_segment():
 
 
 # build_and_save()
-# build_and_save_fedavg()
-load_and_segment()
+build_and_save_fedavg()
+# load_and_segment()

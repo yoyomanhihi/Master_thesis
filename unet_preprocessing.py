@@ -58,7 +58,7 @@ def generateDatasetFromOneClient(masks_path, arrays_path):
     for i in range(len(masks_files)):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-        if np.sum(mask) > 8000000:  # 7864320: # If there is a tumor #CHECK
+        if np.sum(mask) > 8000000: # 7864320: # If there is a tumor #CHECK
             if random.randint(0,3) == 2:
                 print((i, np.sum(mask)))
                 mask[mask < 40] = 0 # Set out of tumor to 0
@@ -105,4 +105,4 @@ def generateAndStore(name, organ, nbclients):
     storeDataset(dataset, dir)
 
 
-# generateAndStore("smallfortest3.pickle", "heart", 90)
+# generateAndStore("smallfortest.pickle", "heart", 3)
