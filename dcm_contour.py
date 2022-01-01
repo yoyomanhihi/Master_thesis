@@ -13,6 +13,7 @@ import shutil
 import scipy.misc
 from collections import defaultdict
 from PIL import Image, ImageDraw
+import imageio
 
 dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
 contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
@@ -353,7 +354,12 @@ def create_images_files(path, img_format='png'):
         shutil.rmtree(images_dir)
     os.makedirs(images_dir)
     for i in range(len(images)):
-        plt.imsave(images_dir + f'/image_{i}.{img_format}', images[i, :, :], cmap="gray")
+        image = images[i]
+        image[image<-1000] = -1000
+        image[0][0] = 3050
+        image = (65535 * (image + 1000) / image.ptp()).astype(np.uint16)
+        imageio.imwrite(images_dir + f'/image_{i}.{img_format}', image.astype(np.uint16))
+        # plt.imsave(images_dir + f'/image_{i}.{img_format}', images[i, :, :], cmap="gray")
 
 
 
@@ -408,12 +414,12 @@ def create_mask_files_only(path, index_name, img_format='png'):
         # Create images and masks folders
         patient = path.split('/')[-3]
         new_path = '/'.join(path.split('/')[:-4])
-        masks_dir = new_path + '/masks_esophagus/' + patient #CHECK
+        masks_dir = new_path + '/masks_Heart/' + patient #CHECK
         if os.path.exists(masks_dir):
             shutil.rmtree(masks_dir)
         os.makedirs(masks_dir)
         for i in range(len(images)):
-            plt.imsave(masks_dir + f'/mask_{i}.{img_format}', Y[i, :, :])
+            plt.imsave(masks_dir + f'/mask_{i}.{img_format}', Y[i, :, :], cmap="gray")
 
 
 
@@ -504,7 +510,6 @@ def merge_masks_lungs_forall(storing_path):
             mask_left = cv2.imread(newpath_left, cv2.IMREAD_GRAYSCALE)
             mask_right = cv2.imread(newpath_right, cv2.IMREAD_GRAYSCALE)
             mask_lungs = mask_left + mask_right
-            mask_lungs = mask_lungs-30
             plt.imsave(dir + f'/mask_{j}.png', mask_lungs)
 
 
@@ -522,7 +527,8 @@ def merge_masks_lungs_forall(storing_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'Esophagus')
+# create_mask_only_forall(general_path, 'Heart')
 # create_images_forall(general_path)
 # store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)
+

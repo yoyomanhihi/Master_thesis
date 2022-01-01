@@ -1,9 +1,11 @@
 import gc
+import math
 import pickle
 import numpy as np
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import MaxPooling2D
 from tensorflow.keras.optimizers import SGD
+from keras.preprocessing.image import ImageDataGenerator
 from keras.models import *
 from keras.layers import *
 from tensorflow.keras import layers
@@ -20,17 +22,33 @@ import os
 import seaborn
 import matplotlib.pyplot as plt
 import cv2
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from keras.layers.advanced_activations import LeakyReLU
 import random
 import plots
+import imageio
 
 
 
-MEAN = -741.7384087183515
-STD = 432.83608694943786
+MEAN = 4507.478941282831
+STD = 7182.589254997573
+
+
+def get_mean_std(dataset_path):
+    means = []
+    stds = []
+    images = os.listdir(dataset_path)
+    for name in images:
+        image_file = dataset_path + '/' + name
+        image = imageio.imread(image_file)
+        image[0][0] = 0
+        mean = np.mean(image)
+        std = np.std(image)
+        means.append(mean)
+        stds.append(std)
+        print('mean: ' + str(mean))
+        print('std: ' + str(std))
+    return np.mean(means), np.mean(std)
+
+
 
 
 smooth = 1.
@@ -156,14 +174,78 @@ def test_model(x_test, y_test, model):
     return score / nbrelems
 
 
+def test_model_ponderated(x_test, y_test, model):
+    score = 0
+    nbrpixels = 0
+    test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
+    for (X_test, Y_test) in test_batched:
+        predictions = model.predict(X_test, batch_size=1)
+        Y_test = np.array(Y_test)
+        for i in range(len(Y_test)):
+            coef = dice_coef_2(Y_test[i], predictions[i])
+            score += coef * np.sum(Y_test[i])
+            nbrpixels += np.sum(Y_test[i])
+        K.clear_session()
+    return score / nbrpixels
 
-def simpleSGD(x_train, y_train, epochs):
+
+def adjustData(img, mask):
+    img = img-MEAN
+    img = img/STD
+    print(np.mean(img))
+    print(np.std(img))
+    mask = mask / 255
+    # plt.imshow(img[0], cmap='gray', interpolation='none')
+    # plt.show()
+    # plt.imshow(mask[0], cmap='gray', interpolation='none')
+    # plt.show()
+    mask[mask > 0.5] = 1
+    mask[mask <= 0.5] = 0
+    return (img,mask)
+
+
+def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 1):
+    '''
+    can generate image and mask at the same time
+    use the same seed for image_datagen and mask_datagen to ensure the transformation for image and mask is the same
+    if you want to visualize the results of generator, set save_to_dir = "your path"
+    '''
+
+    image_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
+    mask_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
+
+    image_generator = image_datagen.flow_from_directory(
+        train_data_dir + '/' + class_train,
+        classes=['images'],
+        class_mode=None,
+        color_mode='grayscale',
+        target_size=(512, 512),
+        batch_size=batch_size,
+        seed=1)
+    mask_generator = mask_datagen.flow_from_directory(
+        train_data_dir + '/' + class_train,
+        classes=['masks'],
+        class_mode=None,
+        color_mode='grayscale',
+        target_size=(512, 512),
+        batch_size=batch_size,
+        seed=1)
+    train_generator = zip(image_generator, mask_generator)
+    for (img, mask) in train_generator:
+        img, mask = adjustData(img,mask)
+        yield (img, mask)
+
+    return train_generator
+
+
+
+def simpleSGD(x_train, y_train, x_test, y_test, epochs):
     ''' Simple SGD algorithm for 32x32 images
         args:
             x_train: training images
             y_train: training labels
             x_test: test images
-            y_test: test labels
+            y_test: test labelsValueError: Layer model expects 1 input(s), but it received 90 input tensors
             lr: learning rate
             comms_round: number of communication rounds
         returns:
@@ -186,17 +268,24 @@ def simpleSGD(x_train, y_train, epochs):
     loss_metric = dice_coef_loss
     metrics = [dice_coef]
     lr = 1e-4
+    batch_size = 1
 
     model = get_model()
 
     model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics) # Check
 
-    model.summary()
+    datasetpath = 'datasets/dataset_heart/' #CHECK
+    len_training = len(os.listdir(datasetpath + 'train/images'))
+    len_validation = len(os.listdir(datasetpath + 'validation/images'))
+    training_generator = dataAugmentation(datasetpath, class_train='train', batch_size=batch_size)
+
+    validation_generator = dataAugmentation(datasetpath, class_train='validation', batch_size=batch_size)
+
+    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/batch_size, steps_per_epoch=len_training/batch_size, epochs=epochs, shuffle=True, callbacks=callbacks)
 
     # Train the model, doing validation at the end of each epoch.
-    epochs = epochs
-    hist = model.fit(x_train, y_train, validation_split=0.2, shuffle=True, batch_size=3, epochs=epochs, callbacks=callbacks)
-    # print((hist.history['val_dice_coef']))
+    # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
+    print((hist.history['val_dice_coef']))
 
     # test_model(x_train, y_train, model)
 
@@ -417,7 +506,7 @@ def show_rtstruct(organ, dcm_path, img_nbr):
         cntr = contours[img_nbr][0]
         for i in range(1, len(contours[img_nbr])):
             cntr += contours[img_nbr][i]
-    elif organ == "lungs":
+    elif organ == "lung":
         index1 = dcm_contour.get_index(dcm_path, "Lung-Left")
         index2 = dcm_contour.get_index(dcm_path, "Lung-Right")
         images, contours1, _ = dcm_contour.get_data(dcm_path, index=index1)
@@ -454,15 +543,25 @@ def finalPrediction(cntr, predictions):
     for i in range(len(predictions)):
         for j in range(len(predictions[i])):
             if predictions[(i, j)] >= 0.5 and cntr[(i, j)] != 1:
-                cntr[(i, j)] = 10
+                cntr[(i, j)] = 10.0
+            elif cntr[(i, j)] == 1:
+                cntr[(i, j)] = 50.0
     # title = zone + " prediction"
     # plt.title(title, fontsize=18)
-    plt.imshow(cntr)
+    # plt.imshow(cntr, cmap='gray')
+    # plt.show()
+    # plt.imshow(cntr, cmap='plasma')
+    # plt.show()
+    # plt.imshow(cntr, cmap='viridis')
+    # plt.show()
+    # plt.imshow(cntr, cmap='seismic')
+    # plt.show()
+    plt.imshow(cntr, cmap='magma')
     plt.show()
 
 
 
-def segmentation_2d(model, client_path, mask_path, array_path, img_nbr, organ):
+def segmentation_2d(model, client_path, mask_path, image_path, img_nbr, organ):
     ''' process the 2d segmentation of an image and plot the heatmap of the tumor predictions
         args:
             model: model used for predictions
@@ -480,9 +579,11 @@ def segmentation_2d(model, client_path, mask_path, array_path, img_nbr, organ):
 
     cntr = show_rtstruct(organ, dcm_path, img_nbr)
 
-    array = np.load(array_path)
-    array = array - MEAN
-    array = array / STD
+    # array = np.load(image_path)
+    array = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    array = array/255
+    # array = array - MEAN
+    # array = array / STD
     array = np.reshape(array, (1, 512, 512, 1))
     predictions = model.predict(array)
     predictions = np.reshape(predictions, (512, 512))

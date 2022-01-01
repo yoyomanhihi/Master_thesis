@@ -8,8 +8,8 @@ import numpy
 def history(history):
     plt.plot(history.history['dice_coef'])
     plt.plot(history.history['val_dice_coef'])
-    plt.title('dice score by epoch')
-    plt.ylabel('dice score')
+    plt.title("Dice's coefficient by epoch")
+    plt.ylabel("Dice's coefficient")
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
     plt.show()
