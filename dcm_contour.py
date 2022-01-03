@@ -414,7 +414,7 @@ def create_mask_files_only(path, index_name, img_format='png'):
         # Create images and masks folders
         patient = path.split('/')[-3]
         new_path = '/'.join(path.split('/')[:-4])
-        masks_dir = new_path + '/masks_Heart/' + patient #CHECK
+        masks_dir = new_path + '/masks_lung-right/' + patient #CHECK
         if os.path.exists(masks_dir):
             shutil.rmtree(masks_dir)
         os.makedirs(masks_dir)
@@ -494,9 +494,9 @@ def store_array_forall(general_path):
 
 
 def merge_masks_lungs_forall(storing_path):
-    path_left = storing_path + "/masks_lung_left"
-    path_right = storing_path + "/masks_lung_right"
-    for i in range(len(os.listdir(path_left))):
+    path_left = storing_path + "/masks_lung-left"
+    path_right = storing_path + "/masks_lung-right"
+    for i in range(289, len(os.listdir(path_left))):
         patient = os.listdir(path_left)[i]
         path_client_left = path_left + "/" + patient
         path_client_right = path_right + "/" + patient
@@ -510,7 +510,7 @@ def merge_masks_lungs_forall(storing_path):
             mask_left = cv2.imread(newpath_left, cv2.IMREAD_GRAYSCALE)
             mask_right = cv2.imread(newpath_right, cv2.IMREAD_GRAYSCALE)
             mask_lungs = mask_left + mask_right
-            plt.imsave(dir + f'/mask_{j}.png', mask_lungs)
+            plt.imsave(dir + f'/mask_{j}.png', mask_lungs, cmap='gray')
 
 
 
@@ -527,7 +527,7 @@ def merge_masks_lungs_forall(storing_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'Heart')
+# create_mask_only_forall(general_path, 'Lung-Right')
 # create_images_forall(general_path)
 # store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)

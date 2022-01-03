@@ -190,10 +190,9 @@ def test_model_ponderated(x_test, y_test, model):
 
 
 def adjustData(img, mask):
+    img[0][0] = 0
     img = img-MEAN
     img = img/STD
-    print(np.mean(img))
-    print(np.std(img))
     mask = mask / 255
     # plt.imshow(img[0], cmap='gray', interpolation='none')
     # plt.show()
@@ -211,8 +210,12 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 1):
     if you want to visualize the results of generator, set save_to_dir = "your path"
     '''
 
-    image_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
-    mask_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
+    if(class_train == 'train'):
+        image_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
+        mask_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
+    elif(class_train == 'validation'):
+        image_datagen = ImageDataGenerator()
+        mask_datagen = ImageDataGenerator()
 
     image_generator = image_datagen.flow_from_directory(
         train_data_dir + '/' + class_train,
@@ -239,7 +242,7 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 1):
 
 
 
-def simpleSGD(x_train, y_train, x_test, y_test, epochs):
+def simpleSGD(datasetpath, epochs):
     ''' Simple SGD algorithm for 32x32 images
         args:
             x_train: training images
@@ -274,12 +277,11 @@ def simpleSGD(x_train, y_train, x_test, y_test, epochs):
 
     model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics) # Check
 
-    datasetpath = 'datasets/dataset_heart/' #CHECK
+    training_generator = dataAugmentation(datasetpath, class_train='train', batch_size=batch_size)
+    validation_generator = dataAugmentation(datasetpath, class_train='validation', batch_size=batch_size)
+
     len_training = len(os.listdir(datasetpath + 'train/images'))
     len_validation = len(os.listdir(datasetpath + 'validation/images'))
-    training_generator = dataAugmentation(datasetpath, class_train='train', batch_size=batch_size)
-
-    validation_generator = dataAugmentation(datasetpath, class_train='validation', batch_size=batch_size)
 
     hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/batch_size, steps_per_epoch=len_training/batch_size, epochs=epochs, shuffle=True, callbacks=callbacks)
 
@@ -331,8 +333,22 @@ def batch_data(data_shard, bs=1):
     return dataset.shuffle(len(label)).batch(bs)
 
 
+def get_ratio_of_clients(nbrclients, datasetpath):
+    sizes = []
+    totalsize = 0
 
-def weight_scalling_factor(clients_trn_data, client_name, frac):
+    for i in range(nbrclients):
+        client_path = datasetpath + str(i) + "/train/images"
+        client_size = len(os.listdir(client_path))
+        sizes.append(client_size)
+        totalsize += client_size
+
+    sizes = np.array(sizes)
+    return sizes/totalsize
+
+
+
+def weight_scaling_factor(clients_trn_data, client_name, frac):
     ''' Calculates the proportion of a client’s local training data with the overall training data held by all clients
         args:
             clients_trn_data: dictionary of training data by client
@@ -370,7 +386,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200, patience = 15):
+def fedAvg(datasetpath, nbrclients, frac = 1, bs = 1, epo = 1, comms_round = 200, patience = 15):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -389,11 +405,17 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
     test_accs = []
     train_acc = []
     patience_wait = 0
+    len_validation = len(os.listdir(datasetpath + 'validation/images'))
+
+    clients_weight = get_ratio_of_clients(nbrclients, datasetpath)
+    print("clients_weight: " + str(clients_weight))
 
     # process and batch the training data for each client
-    clients_batched = dict()
-    for (client_name, data) in clients.items():
-        clients_batched[client_name] = batch_data(data, bs = bs)
+    # clients_batched = dict()
+    # for (client_name, data) in clients.items():
+    #     clients_batched[client_name] = batch_data(data, bs = bs)
+
+    validation_generator = dataAugmentation(datasetpath, class_train='validation', batch_size=bs)
 
     history = History()
 
@@ -409,6 +431,8 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
     # initialize global model
     global_model = get_model()
 
+    global_model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)  # Check
+
 
     # commence global training loop
     for comm_round in range(comms_round):
@@ -421,13 +445,22 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
         # initial list to collect local model weights after scalling
         scaled_local_weight_list = list()
 
-        # randomize client data - using keys
-        client_names = list(clients_batched.keys())
-        random.shuffle(client_names)
+        # # randomize client data - using keys
+        # client_names = list(clients_batched.keys())
+        # random.shuffle(client_names)
+
+        clients = list(range(0, nbrclients))
+
+        random.shuffle(clients)
+        print('clients: ' + str(clients))
 
         # loop through each client and create new local model
-        nbrclients = int(frac * len(client_names))
-        for client in client_names[:nbrclients]:
+        nbrclients = int(frac * nbrclients)
+        # for client in client_names[:nbrclients]:
+        for client in clients[:nbrclients]:
+
+            client_path = datasetpath + str(client)
+
             local_model = get_model()
 
             local_model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
@@ -435,11 +468,20 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
             # set local model weight to the weight of the global model
             local_model.set_weights(global_weights)
 
-            # fit local model with client's data
-            train_acc = local_model.fit(clients_batched[client], epochs=epo, verbose=1, callbacks=callbacks)
+            training_generator = dataAugmentation(client_path, class_train='train', batch_size=bs)
+
+            len_training = len(os.listdir(client_path + '/train/images'))
+
+            train_acc = local_model.fit_generator(training_generator,
+                                       steps_per_epoch=len_training / bs, epochs=epo, shuffle=True,
+                                       callbacks=callbacks)
 
             # scale the model weights and add to list
-            scaling_factor = weight_scalling_factor(clients_batched, client, frac)
+
+            # scaling_factor = weight_scaling_factor(clients_batched, client, frac)
+
+            scaling_factor = clients_weight[client]
+
             scaled_weights = scale_model_weights(local_model.get_weights(), scaling_factor)
             scaled_local_weight_list.append(scaled_weights)
 
@@ -454,24 +496,32 @@ def fedAvg(clients, x_test, y_test, frac = 1, bs = 1, epo = 1, comms_round = 200
         global_model.set_weights(average_weights)
 
         # process and batch the test se
-        test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
+        # test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
 
         # test global model and print out metrics after each communications round
-        for (X_test, Y_test) in test_batched:
-            test_acc = test_model(X_test, Y_test, global_model)
+        # for (X_test, Y_test) in test_batched:
 
-            test_accs.append(test_acc)
+        # test_acc = test_model(X_test, Y_test, global_model)
+        test_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/bs)
+        print(type(test_acc))
+        print('test_acc: ' + str(test_acc))
+        print(len(test_acc))
 
-            # If best acc so far
-            if test_acc > best_test_acc:
-                print("Dice score improved: from " + str(best_test_acc) + " to: " + str(test_acc))
-                best_test_acc = test_acc
-                patience_wait = 0
-                global_model.save('fedAvg_best_model.h5')
-            else:
-                print("Dice score didn't improve, got a dice score of " + str(test_acc) + " but best is still " + str(best_test_acc) )
-                patience_wait += 1
-            print("patience_wait = " + str(patience_wait))
+        test_acc=test_acc[1] # Dice's coeff
+        print(test_acc)
+
+        test_accs.append(test_acc)
+
+        # If best acc so far
+        if test_acc > best_test_acc:
+            print("Dice score improved: from " + str(best_test_acc) + " to: " + str(test_acc))
+            best_test_acc = test_acc
+            patience_wait = 0
+            global_model.save('fedAvg_best_model.h5')
+        else:
+            print("Dice score didn't improve, got a dice score of " + str(test_acc) + " but best is still " + str(best_test_acc) )
+            patience_wait += 1
+        print("patience_wait = " + str(patience_wait))
 
 
         if patience_wait >= patience:
@@ -579,13 +629,12 @@ def segmentation_2d(model, client_path, mask_path, image_path, img_nbr, organ):
 
     cntr = show_rtstruct(organ, dcm_path, img_nbr)
 
-    # array = np.load(image_path)
-    array = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    array = array/255
-    # array = array - MEAN
-    # array = array / STD
-    array = np.reshape(array, (1, 512, 512, 1))
-    predictions = model.predict(array)
+    image = imageio.imread(image_path)
+    image[0][0] = 0
+    image = image-MEAN
+    image = image/STD
+    image = np.reshape(image, (1, 512, 512, 1))
+    predictions = model.predict(image)
     predictions = np.reshape(predictions, (512, 512))
 
     heatMap(predictions)
@@ -593,8 +642,8 @@ def segmentation_2d(model, client_path, mask_path, image_path, img_nbr, organ):
     finalPrediction(cntr, predictions)
 
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-    mask[mask < 40] = 0  # Set out of tumor to 0
-    mask[mask > 210] = 1  # Set out of tumor to 1
+    mask[mask < 0.5] = 0  # Set out of tumor to 0
+    mask[mask > 0.5] = 1  # Set out of tumor to 1
     dice = dice_coef_2(mask, predictions)
     print("dice accuracy: " + str(dice))
 
