@@ -49,6 +49,17 @@ def get_mean_std(dataset_path):
     return np.mean(means), np.mean(std)
 
 
+smooth = 1.
+# Dice Coefficient to work with Tensorflow
+def dice_coef_ponderated(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return ((2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)) * K.sum(y_true)
+
+
+def dice_coef_loss_ponderated(y_true, y_pred):
+    return -dice_coef_ponderated(y_true, y_pred)
 
 
 smooth = 1.
@@ -268,8 +279,8 @@ def simpleSGD(datasetpath, epochs):
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss
-    metrics = [dice_coef]
+    loss_metric = dice_coef_loss_ponderated
+    metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     lr = 1e-4
     batch_size = 1
 
@@ -334,6 +345,11 @@ def batch_data(data_shard, bs=1):
 
 
 def get_ratio_of_clients(nbrclients, datasetpath):
+    ''' Calculates the proportion of a client’s local training data with the overall training data held by all clients
+        args:
+            nbrclients: number of clients
+            datasetpath: path to the dataset with all clients
+    '''
     sizes = []
     totalsize = 0
 
@@ -543,6 +559,14 @@ def show_rtstruct(organ, dcm_path, img_nbr):
     if organ == "tumor":
         # plot the rt struct of the image
         index = dcm_contour.get_index(dcm_path, "GTV-1")
+        images, contours, _ = dcm_contour.get_data(dcm_path, index=index)
+        for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
+            dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)
+        contours = np.array(contours)
+        cntr = contours[img_nbr, 0]
+    if organ == "esophagus":
+        # plot the rt struct of the image
+        index = dcm_contour.get_index(dcm_path, "Esophagus")
         images, contours, _ = dcm_contour.get_data(dcm_path, index=index)
         for img_arr, contour_arr in zip(images[img_nbr:img_nbr+1], contours[img_nbr:img_nbr+1]):
             dcm_contour.plot2dcontour(img_arr, contour_arr, img_nbr)

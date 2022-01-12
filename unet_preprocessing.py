@@ -62,7 +62,7 @@ def generateDatasetFromOneClient(masks_path, images_path, count, organ, train):
         image = imageio.imread(image_file)
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-        if np.sum(mask) > 10000 : #CHECK
+        if np.sum(mask) > 0 : #CHECK
             plt.imsave('datasets/dataset_' + str(organ) + '/' + str(train) + f'/masks/{count}_{i}.png',
                         mask, cmap='gray')
             imageio.imwrite('datasets/dataset_' + str(organ) + '/' + str(train) + f'/images/{count}_{i}.png',
@@ -100,7 +100,7 @@ def generateDatasetFromManyClients(storing_path, organ, train, initclient, endcl
     return dataset
 
 
-def generateAndStore(name, organ, train, initclient, endclient):
+def generateAndStore(organ, train, initclient, endclient):
     ''' Generate a dataset from many clients and store it in the files
         args:
             name: name of the file to save
@@ -110,8 +110,8 @@ def generateAndStore(name, organ, train, initclient, endclient):
             count0: number of non tumor examples
             count1: number of tumor examples'''
     dataset = generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient)
-    dir = "datasets/" + str(name)
+    # dir = "datasets/" + str(name)
     # storeDataset(dataset, dir)
 
 
-# generateAndStore("lungs_first250(261)_1of36_geq8400000_3.pickle", "heart", "train", initclient=0, endclient=80)
+# generateAndStore("esophagus", "train", initclient=0, endclient=280)

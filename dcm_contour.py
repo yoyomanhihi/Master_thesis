@@ -15,8 +15,12 @@ from collections import defaultdict
 from PIL import Image, ImageDraw
 import imageio
 
-dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
-contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
+dcm_path = 'manifest-1638281314414/Pediatric-CT-SEG/Pediatric-CT-SEG-00DCF4D6/10-09-2009-NA-CT-45894/2.000000-RTSTRUCT-65004'
+# dcm_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-003/03-21-1995-NA-FDG PET CT Clinical Wh-36710/1.000000-SCOUT-44780'
+# dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
+# contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
+contour_path = "manifest-1638281314414/Pediatric-CT-SEG/Pediatric-CT-SEG-00DCF4D6/10-09-2009-NA-CT-45894/30144.000000-CT-67414/1-001.dcm"
+# contour_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-001/04-30-1994-NA-PETCT Lung Cancer-74760/1.000000-SCOUT-96085/1-1.dcm'
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 
@@ -26,9 +30,8 @@ storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 # storing_path = "NSCLC-Radiomics-Interobserver1"
 
 
-
-
 contour_data = dicom.read_file(contour_path)
+
 
 
 def plot2dcontour(img_arr, contour_arr, img_nbr, figsize=(20, 20)):
@@ -182,6 +185,11 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     # handle `/` missing
     if path[-1] != '/': path += '/'
     f = dicom.read_file(path + file)
+
+    # GTV = f.Modality
+    # print(GTV)
+
+    print(dcm_contour.get_roi_names(f))
 
     GTV = f.ROIContourSequence[ROIContourSeq]
     # get contour datasets in a list
@@ -414,7 +422,7 @@ def create_mask_files_only(path, index_name, img_format='png'):
         # Create images and masks folders
         patient = path.split('/')[-3]
         new_path = '/'.join(path.split('/')[:-4])
-        masks_dir = new_path + '/masks_lung-right/' + patient #CHECK
+        masks_dir = new_path + '/masks_esophagus/' + patient #CHECK
         if os.path.exists(masks_dir):
             shutil.rmtree(masks_dir)
         os.makedirs(masks_dir)
@@ -496,7 +504,7 @@ def store_array_forall(general_path):
 def merge_masks_lungs_forall(storing_path):
     path_left = storing_path + "/masks_lung-left"
     path_right = storing_path + "/masks_lung-right"
-    for i in range(289, len(os.listdir(path_left))):
+    for i in range(len(os.listdir(path_left))):
         patient = os.listdir(path_left)[i]
         path_client_left = path_left + "/" + patient
         path_client_right = path_right + "/" + patient
@@ -527,7 +535,7 @@ def merge_masks_lungs_forall(storing_path):
 #             print(im.shape)
 
 
-# create_mask_only_forall(general_path, 'Lung-Right')
+# create_mask_only_forall(general_path, 'Esophagus')
 # create_images_forall(general_path)
 # store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)
