@@ -10,16 +10,18 @@ import operator
 import os
 import cv2
 import shutil
+import pydicom_seg
+import SimpleITK as sitk
 import scipy.misc
 from collections import defaultdict
 from PIL import Image, ImageDraw
 import imageio
 
-dcm_path = 'manifest-1638281314414/Pediatric-CT-SEG/Pediatric-CT-SEG-00DCF4D6/10-09-2009-NA-CT-45894/2.000000-RTSTRUCT-65004'
+dcm_path = 'manifest-1634338693043/Pancreatic-CT-CBCT-SEG/Pancreas-CT-CB_003/01-15-2012-NA-PANCREAS-79715/2.000000-DI-87802'
 # dcm_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-003/03-21-1995-NA-FDG PET CT Clinical Wh-36710/1.000000-SCOUT-44780'
 # dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
 # contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
-contour_path = "manifest-1638281314414/Pediatric-CT-SEG/Pediatric-CT-SEG-00DCF4D6/10-09-2009-NA-CT-45894/30144.000000-CT-67414/1-001.dcm"
+contour_path = "manifest-1557326747206/LCTSC/LCTSC-Test-S1-101/03-03-2004-NA-NA-08186/1.000000-NA-56597/1-1.dcm"
 # contour_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-001/04-30-1994-NA-PETCT Lung Cancer-74760/1.000000-SCOUT-96085/1-1.dcm'
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 storing_path = "NSCLC-Radiomics/manifest-1603198545583"
@@ -30,8 +32,19 @@ storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 # storing_path = "NSCLC-Radiomics-Interobserver1"
 
 
-contour_data = dicom.read_file(contour_path)
-
+# contour_data = dicom.read_file(contour_path)
+# print(dcm_contour.get_roi_names(contour_data))
+#
+# dcm = dicom.dcmread(contour_path)
+#
+# reader = pydicom_seg.SegmentReader()
+# result = reader.read(dcm)
+# print(result.available_segments)
+#
+# for segment_number in result.available_segments:
+#     image_data = result.segment_data(segment_number)  # directly available
+#     plt.imshow(image_data[150,:,:], cmap='gray', interpolation='none')
+#     plt.show()
 
 
 def plot2dcontour(img_arr, contour_arr, img_nbr, figsize=(20, 20)):
@@ -186,10 +199,10 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     if path[-1] != '/': path += '/'
     f = dicom.read_file(path + file)
 
-    # GTV = f.Modality
-    # print(GTV)
+    # moda = f.Modality
+    # print(moda)
 
-    print(dcm_contour.get_roi_names(f))
+    # print(dcm_contour.get_roi_names(f))
 
     GTV = f.ROIContourSequence[ROIContourSeq]
     # get contour datasets in a list
@@ -225,10 +238,10 @@ def get_contour_dict(contour_file, path, index):
 
 
 # get all image-contour array pairs
-contour_arrays = cfile2pixels(file="1-1.dcm", path=dcm_path, ROIContourSeq=0)
+# contour_arrays = cfile2pixels(file="1-1.dcm", path=dcm_path, ROIContourSeq=0)
 
 # get first image - contour array
-first_image, first_contour, img_id, mask = contour_arrays[4]
+# first_image, first_contour, img_id, mask = contour_arrays[4]
 
 # # show an example
 # plt.figure(figsize=(20, 10))
@@ -266,7 +279,7 @@ def slice_order(path):
 
 
 # ordered files
-ordered_slices = slice_order(dcm_path)
+# ordered_slices = slice_order(dcm_path)
 
 def get_data(path, index):
     """
@@ -353,10 +366,12 @@ def create_images_files(path, img_format='png'):
         index (int): index of the desired ROISequence
         img_format (str): image format to save by, png by default
     """
-    images, contours, masks = get_data(path, 0) #Make sure to read the file as the index doesn't matter
+    print(path)
+    index = get_index(path, "Heart")
+    images, contours, masks = get_data(path, index) #Make sure to read the file as the index doesn't matter
 
-    patient = path.split('/')[-3]
-    new_path = '/'.join(path.split('/')[:-4])
+    patient = path.split('/')[-2]
+    new_path = '/'.join(path.split('/')[:-4]) # ChecK
     images_dir = new_path + '/images/' + patient
     if os.path.exists(images_dir):
         shutil.rmtree(images_dir)
@@ -367,7 +382,7 @@ def create_images_files(path, img_format='png'):
         image[0][0] = 3050
         image = (65535 * (image + 1000) / image.ptp()).astype(np.uint16)
         imageio.imwrite(images_dir + f'/image_{i}.{img_format}', image.astype(np.uint16))
-        # plt.imsave(images_dir + f'/image_{i}.{img_format}', images[i, :, :], cmap="gray")
+        print(images_dir + f'/image_{i}.{img_format}')
 
 
 
@@ -378,7 +393,9 @@ def create_images_forall(general_path):
             index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
-    for folder in patients_folders:
+    i = 5 # CHECK
+    for folder in patients_folders[i:]:
+        print(i)
         newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
@@ -391,6 +408,7 @@ def create_images_forall(general_path):
                         newfiles3 = os.listdir(newpath3)
                         if len(newfiles3) > 5:
                             create_images_files(newpath3, img_format='png')
+                            i+=1
 
 
 
@@ -405,6 +423,7 @@ def create_mask_files_only(path, index_name, img_format='png'):
         img_format (str): image format to save by, png by default
     """
     # Extract Arrays from DICOM
+    print(path)
     index = get_index(path, index_name)
     if index is not None:
         images, contours, masks = get_data(path, index)
@@ -420,14 +439,17 @@ def create_mask_files_only(path, index_name, img_format='png'):
                 Y.append(ctr)
         Y = np.array(Y)
         # Create images and masks folders
-        patient = path.split('/')[-3]
+        patient = path.split('/')[-2] # CHECK
         new_path = '/'.join(path.split('/')[:-4])
-        masks_dir = new_path + '/masks_esophagus/' + patient #CHECK
+        masks_dir = new_path + '/masks_heart/' + patient #CHECK
         if os.path.exists(masks_dir):
             shutil.rmtree(masks_dir)
         os.makedirs(masks_dir)
         for i in range(len(images)):
-            plt.imsave(masks_dir + f'/mask_{i}.{img_format}', Y[i, :, :], cmap="gray")
+            mask = Y[i, :, :]
+            if np.sum(mask) > 0:
+                print(masks_dir + f'/mask_{i}.{img_format}')
+                plt.imsave(masks_dir + f'/mask_{i}.{img_format}', Y[i, :, :], cmap="gray")
 
 
 
@@ -438,7 +460,9 @@ def create_mask_only_forall(general_path, index_name):
             index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
-    for folder in patients_folders:
+    i = 0  # CHECK
+    for folder in patients_folders[i:]:
+        print(i)
         newpath = general_path + "/" + folder
         if(os.path.isdir(newpath)):
             newfiles = os.listdir(newpath)
@@ -451,6 +475,7 @@ def create_mask_only_forall(general_path, index_name):
                         newfiles3 = os.listdir(newpath3)
                         if len(newfiles3) > 5:
                             create_mask_files_only(newpath3, index_name, img_format='png')
+                            i+=1
 
 
 
@@ -534,9 +559,8 @@ def merge_masks_lungs_forall(storing_path):
 #             im = cv2.imread(newpath3)
 #             print(im.shape)
 
-
-# create_mask_only_forall(general_path, 'Esophagus')
-# create_images_forall(general_path)
+# create_mask_only_forall("manifest-1557326747206/LCTSC", 'Heart')
+# create_images_forall("manifest-1557326747206/LCTSC")
 # store_array_forall(general_path)
 # merge_masks_lungs_forall(storing_path)
 

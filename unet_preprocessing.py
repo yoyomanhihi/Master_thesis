@@ -56,32 +56,32 @@ def storeDataset(dataset, dir):
 def generateDatasetFromOneClient(masks_path, images_path, count, organ, train):
     inputs = []
     outputs = []
-    masks_files = sorted_alphanumeric(os.listdir(masks_path))
-    for i in range(len(masks_files)):
-        image_file = images_path + "/image_" + str(i) + ".png"
-        image = imageio.imread(image_file)
+    for i in range(len(os.listdir(images_path))):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
-        mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-        if np.sum(mask) > 0 : #CHECK
-            plt.imsave('datasets/dataset_' + str(organ) + '/' + str(train) + f'/masks/{count}_{i}.png',
-                        mask, cmap='gray')
-            imageio.imwrite('datasets/dataset_' + str(organ) + '/' + str(train) + f'/images/{count}_{i}.png',
-                        image.astype(np.uint16))
-            # print((i, np.sum(mask)))
-            # mask[mask < 40] = 0 # Set out of tumor to 0
-            # mask[mask > 210] = 1 # Set out of tumor to 1
-            # print(np.sum(mask) / (512*512)) # Get zone/background ratio
-            # array_file = arrays_path + "/array_" + str(i) + ".npy"
-            # image = np.load(array_file)
-            # image = image - MEAN
-            # image = image / STD
-            # inputs.append(image)
-            # outputs.append(mask)
+        if(os.path.isfile(mask_file)):
+            mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
+            image_file = images_path + "/image_" + str(i) + ".png"
+            image = imageio.imread(image_file)
+            if np.sum(mask) > 0 : #CHECK
+                plt.imsave('datasets/dataset_' + str(organ) + '/' + str(train) + f'/masks/{count}_{i}.png',
+                            mask, cmap='gray')
+                imageio.imwrite('datasets/dataset_' + str(organ) + '/' + str(train) + f'/images/{count}_{i}.png',
+                            image.astype(np.uint16))
+                # print((i, np.sum(mask)))
+                # mask[mask < 40] = 0 # Set out of tumor to 0
+                # mask[mask > 210] = 1 # Set out of tumor to 1
+                # print(np.sum(mask) / (512*512)) # Get zone/background ratio
+                # array_file = arrays_path + "/array_" + str(i) + ".npy"
+                # image = np.load(array_file)
+                # image = image - MEAN
+                # image = image / STD
+                # inputs.append(image)
+                # outputs.append(mask)
     data = list(zip(inputs, outputs))
     return data
 
 
-def generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient):
+def generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient, initialcount):
     images_path = storing_path + "/images"
     masks_path = storing_path + "/masks_" + organ
     dataset = []
@@ -89,7 +89,7 @@ def generateDatasetFromManyClients(storing_path, organ, train, initclient, endcl
     print(len(files))
     files.sort()
     end = min(endclient, len(files) - 2)
-    count = 0
+    count = initialcount
     for patient in files[initclient:end]:
         masks_path2 = masks_path + "/" + patient
         print(masks_path2)
@@ -100,7 +100,7 @@ def generateDatasetFromManyClients(storing_path, organ, train, initclient, endcl
     return dataset
 
 
-def generateAndStore(organ, train, initclient, endclient):
+def generateAndStore(path, organ, train, initclient, endclient, initialcount):
     ''' Generate a dataset from many clients and store it in the files
         args:
             name: name of the file to save
@@ -109,9 +109,9 @@ def generateAndStore(organ, train, initclient, endclient):
             evalutation: tuple of the form (count0, count1)
             count0: number of non tumor examples
             count1: number of tumor examples'''
-    dataset = generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient)
+    dataset = generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount)
     # dir = "datasets/" + str(name)
     # storeDataset(dataset, dir)
 
 
-# generateAndStore("esophagus", "train", initclient=0, endclient=280)
+# generateAndStore("manifest-1557326747206", "heart", "validation", initclient=45, endclient=60, initialcount=102)
