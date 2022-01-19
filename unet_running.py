@@ -48,7 +48,7 @@ def load_and_evaluate():
 
     print("model dice score on test dataset: " + str(SGD_acc))
 
-# build_and_save(datasetpath=datasetpath, epochs=200)
+build_and_save(datasetpath=datasetpath, epochs=200)
 # build_and_save_fedavg(datasetpath=datasetpath_fedAvg, nbclients=3)
 # load_and_segment('models/fedAvg_test_dataaugm.h5')
 # load_and_evaluate()
