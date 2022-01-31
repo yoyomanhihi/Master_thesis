@@ -1,20 +1,15 @@
 import gc
-import math
 import pickle
 import numpy as np
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import MaxPooling2D
-from tensorflow.keras.optimizers import SGD
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import *
 from keras.layers import *
-from tensorflow.keras import layers
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.callbacks import History
-import keras
-from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
 import tensorflow as tf
 import dcm_contour

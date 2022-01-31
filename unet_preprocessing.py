@@ -2,12 +2,8 @@ import pickle
 import re
 import numpy as np
 import pydicom as dicom
-import sys
 import cv2
 import os
-import random
-import time
-import seaborn
 import matplotlib.pyplot as plt
 import imageio
 

@@ -1,7 +1,6 @@
 import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
-import numpy as np
 
 client_nbr = 107
 img_nbr = 43

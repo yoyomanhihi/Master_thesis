@@ -1,4 +1,3 @@
-from pathlib import Path
 from pydicom.errors import InvalidDicomError
 import dicom_contour.contour as dcm_contour
 from scipy.sparse import csc_matrix
@@ -10,10 +9,6 @@ import operator
 import os
 import cv2
 import shutil
-import pydicom_seg
-import SimpleITK as sitk
-import scipy.misc
-from collections import defaultdict
 from PIL import Image, ImageDraw
 import imageio
 
