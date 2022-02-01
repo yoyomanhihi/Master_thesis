@@ -1,0 +1,15 @@
+dicom_contour
+imageio
+imutils
+keras
+matplotlib
+numpy
+opencv_python
+pandas
+pydicom
+pyqtgraph
+rt_utils
+scikit_image
+scipy
+seaborn
+tensorflow-gpu
