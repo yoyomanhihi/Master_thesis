@@ -12,4 +12,4 @@ rt_utils
 scikit_image
 scipy
 seaborn
-tensorflow-gpu
+tensorflow

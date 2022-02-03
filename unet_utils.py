@@ -20,6 +20,7 @@ import cv2
 import random
 import plots
 import imageio
+import lr_scheduler
 
 
 
@@ -170,7 +171,7 @@ def test_model(x_test, y_test, model):
     nbrelems = 0
     test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
     for (X_test, Y_test) in test_batched:
-        predictions = model.predict(X_test, batch_size=1)
+        predictions = model.predict(X_test, batch_size=3)
         Y_test = np.array(Y_test)
         for i in range(len(Y_test)):
             coef = dice_coef_2(Y_test[i], predictions[i])
@@ -185,7 +186,7 @@ def test_model_ponderated(x_test, y_test, model):
     nbrpixels = 0
     test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
     for (X_test, Y_test) in test_batched:
-        predictions = model.predict(X_test, batch_size=1)
+        predictions = model.predict(X_test, batch_size=3)
         Y_test = np.array(Y_test)
         for i in range(len(Y_test)):
             coef = dice_coef_2(Y_test[i], predictions[i])
@@ -209,7 +210,7 @@ def adjustData(img, mask):
     return (img,mask)
 
 
-def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 1):
+def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
     '''
     can generate image and mask at the same time
     use the same seed for image_datagen and mask_datagen to ensure the transformation for image and mask is the same
@@ -248,6 +249,9 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 1):
 
 
 
+
+
+
 def simpleSGD(datasetpath, epochs):
     ''' Simple SGD algorithm for 32x32 images
         args:
@@ -274,14 +278,14 @@ def simpleSGD(datasetpath, epochs):
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss_ponderated
+    loss_metric = dice_coef_loss
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
-    lr = 1e-4
-    batch_size = 1
+    lr = lr_scheduler.TanhDecayScheduler()
+    batch_size = 3
 
     model = get_model()
 
-    model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics) # Check
+    model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics) # Check
 
     training_generator = dataAugmentation(datasetpath, class_train='train', batch_size=batch_size)
     validation_generator = dataAugmentation(datasetpath, class_train='validation', batch_size=batch_size)
@@ -326,7 +330,7 @@ def createClients(listdatasetspaths):
 
 
 
-def batch_data(data_shard, bs=1):
+def batch_data(data_shard, bs=3):
     ''' Takes in a clients data shard and create a tfds object off it
         args:
             shard: a data, label constituting a client's data shard
@@ -397,7 +401,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, frac = 1, bs = 1, epo = 1, comms_round = 200, patience = 15):
+def fedAvg(datasetpath, nbrclients, frac = 1, bs = 3, epo = 1, comms_round = 200, patience = 15):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -442,7 +446,7 @@ def fedAvg(datasetpath, nbrclients, frac = 1, bs = 1, epo = 1, comms_round = 200
     # initialize global model
     global_model = get_model()
 
-    global_model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)  # Check
+    global_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)  # Check
 
 
     # commence global training loop
@@ -474,7 +478,7 @@ def fedAvg(datasetpath, nbrclients, frac = 1, bs = 1, epo = 1, comms_round = 200
 
             local_model = get_model()
 
-            local_model.compile(optimizer=optimizer(lr=lr), loss=loss_metric, metrics=metrics)
+            local_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 
             # set local model weight to the weight of the global model
             local_model.set_weights(global_weights)
