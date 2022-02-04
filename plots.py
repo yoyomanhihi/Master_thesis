@@ -1,6 +1,4 @@
 # Visualize training history
-from keras.models import Sequential
-from keras.layers import Dense
 import matplotlib.pyplot as plt
 import numpy
 

@@ -1,15 +1,13 @@
-dicom_contour
+dicom-contour
 imageio
 imutils
-keras
 matplotlib
 numpy
 opencv_python
 pandas
-pydicom
+pydicom==2.1.2
 pyqtgraph
 rt_utils
 scikit_image
 scipy
 seaborn
-tensorflow
