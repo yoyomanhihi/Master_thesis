@@ -3,9 +3,9 @@ import pickle
 import numpy as np
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import MaxPooling2D
-from keras.preprocessing.image import ImageDataGenerator
-from keras.models import *
-from keras.layers import *
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import *
+from tensorflow.keras.layers import *
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import TensorBoard
