@@ -374,7 +374,7 @@ def create_images_files(path, img_format='png'):
     for i in range(len(images)):
         image = images[i]
         image[image<-1000] = -1000
-        image[0][0] = 3050
+        image[0][0] = 3200
         image = (65535 * (image + 1000) / image.ptp()).astype(np.uint16)
         imageio.imwrite(images_dir + f'/image_{i}.{img_format}', image.astype(np.uint16))
         print(images_dir + f'/image_{i}.{img_format}')
@@ -471,54 +471,6 @@ def create_mask_only_forall(general_path, index_name):
                         if len(newfiles3) > 5:
                             create_mask_files_only(newpath3, index_name, img_format='png')
                             i+=1
-
-
-
-def store_array(path):
-    """
-    Create image and corresponding mask files under to folders '/images' and '/masks'
-    in the parent directory of path.
-    Inputs:
-        path (str): path of the the directory that has DICOM files in it, e.g. folder of a single patient
-        index (int): index of the desired ROISequence
-        img_format (str): image format to save by, png by default
-    """
-    # Extract Arrays from DICOM
-    X, _, _ = get_data(path, 0) # Make sure to read the data
-    # Create images and masks folders
-
-    patient = path.split('/')[-3]
-    new_path = '/'.join(path.split('/')[:-4])
-    arrays_dir = new_path + '/arrays/' + patient
-    if os.path.exists(arrays_dir):
-        shutil.rmtree(arrays_dir)
-    os.makedirs(arrays_dir)
-    for i in range(len(X)):
-        np.save(arrays_dir + f'/array_{i}', X[i, :, :])
-
-
-
-def store_array_forall(general_path):
-    """ Create images and masks folders for every patient
-        args:
-            general_path: path to the folder including all patients
-            index_name: name of the index to be segmented in the masks folder
-    """
-    patients_folders = os.listdir(general_path)
-    for folder in patients_folders:
-        newpath = general_path + "/" + folder
-        if(os.path.isdir(newpath)):
-            newfiles = os.listdir(newpath)
-            for f2 in newfiles:
-                if f2 != 'images' and f2 != 'masks' and f2 != 'masks_Lung_Left' and f2 != 'arrays' and f2 != 'masks_Lung_Right' and f2 != 'masks_Lungs':
-                    newpath2 = newpath + "/" + f2
-                    newfiles2 = os.listdir(newpath2)
-                    for f3 in newfiles2:
-                        newpath3 = newpath2 + "/" + f3
-                        newfiles3 = os.listdir(newpath3)
-                        if len(newfiles3) > 5:
-                            store_array(newpath3)
-
 
 
 def merge_masks_lungs_forall(storing_path):

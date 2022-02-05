@@ -3,25 +3,24 @@ import matplotlib.pyplot as plt
 import numpy
 
 
-def history(history):
+def history(history, name):
+
+    plot_name = name + '.png'
+
     plt.plot(history.history['dice_coef'])
     plt.plot(history.history['val_dice_coef'])
     plt.title("Dice's coefficient by epoch")
     plt.ylabel("Dice's coefficient")
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    # summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('loss by epoch')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
+    plt.savefig(plot_name)
     plt.show()
 
 
-def history_fedavg(train_accs, test_accs, clientsnbr):
+def history_fedavg(train_accs, test_accs, clientsnbr, name):
+
+    plot_name = name + '.png'
+
     for i in range(clientsnbr):
         train_accs_client = []
         for j in range(i, len(train_accs), clientsnbr):
@@ -33,4 +32,5 @@ def history_fedavg(train_accs, test_accs, clientsnbr):
     plt.ylabel('dice score')
     plt.xlabel('epoch')
     plt.legend(['train client 1', 'train client 2', 'train client 3', 'test'], loc='upper left')
+    plt.savefig(plot_name)
     plt.show()

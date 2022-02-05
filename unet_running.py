@@ -1,6 +1,8 @@
+import unet_utils
 import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
+import sys
 
 client_nbr = 107
 img_nbr = 43
@@ -10,6 +12,8 @@ mask_path = 'NSCLC-Radiomics/manifest-1603198545583/masks_' + str(organ) + "/LUN
 image_path = 'NSCLC-Radiomics/manifest-1603198545583/images' + "/LUNG1-" + str(client_nbr) + "/image_" + str(img_nbr) + ".png"
 datasetpath = 'datasets/dataset_heart/'
 datasetpath_fedAvg = 'datasets/dataset_heart_fedAvg/'
+name = sys.argv[1]
+print('name: ' + str(name))
 
 def build_and_save(datasetpath, epochs):
     physical_devices = tf.config.list_physical_devices('GPU')
@@ -17,7 +21,7 @@ def build_and_save(datasetpath, epochs):
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    utils.simpleSGD(datasetpath=datasetpath, epochs=epochs)
+    utils.simpleSGD(datasetpath=datasetpath, epochs=epochs, name=name)
 
 
 def build_and_save_fedavg(datasetpath, nbclients):
@@ -25,7 +29,7 @@ def build_and_save_fedavg(datasetpath, nbclients):
     # print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    utils.fedAvg(datasetpath, 3, patience=15)
+    utils.fedAvg(datasetpath, 3, name=name, patience=10)
 
 
 
@@ -47,7 +51,7 @@ def load_and_evaluate():
 
     print("model dice score on test dataset: " + str(SGD_acc))
 
-build_and_save(datasetpath=datasetpath, epochs=200)
+build_and_save(datasetpath=datasetpath, epochs=100)
 # build_and_save_fedavg(datasetpath=datasetpath_fedAvg, nbclients=3)
 # load_and_segment('models/fedAvg_test_dataaugm.h5')
 # load_and_evaluate()

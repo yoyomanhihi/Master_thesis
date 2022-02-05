@@ -24,16 +24,16 @@ import lr_scheduler
 
 
 
-MEAN = 4507.478941282831
+MEAN = 4611.838943481445
 STD = 7182.589254997573
 
 
-def get_mean_std(dataset_path):
+def get_mean_std(images_path):
     means = []
     stds = []
-    images = os.listdir(dataset_path)
+    images = os.listdir(images_path)
     for name in images:
-        image_file = dataset_path + '/' + name
+        image_file = images_path + '/' + name
         image = imageio.imread(image_file)
         image[0][0] = 0
         mean = np.mean(image)
@@ -196,8 +196,18 @@ def test_model_ponderated(x_test, y_test, model):
     return score / nbrpixels
 
 
-def adjustData(img, mask):
-    img[0][0] = 0
+def adjustData(img, mask, class_train):
+    for image in img:
+        image[0][0] = 0
+        # print(np.max(image))
+        # plt.imshow(image, cmap='gray', vmin=0, vmax=65535)
+        # plt.show()
+
+    if class_train == 'train':
+        brightness = random.uniform(0.98, 1.02)
+        for i in range(len(img)):
+            img[i] = img[i] * brightness
+
     img = img-MEAN
     img = img/STD
     mask = mask / 255
@@ -218,11 +228,11 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
     '''
 
     if(class_train == 'train'):
-        image_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
-        mask_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=5)
+        image_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=20)
+        mask_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=20)
     elif(class_train == 'validation'):
-        image_datagen = ImageDataGenerator()
-        mask_datagen = ImageDataGenerator()
+        image_datagen = ImageDataGenerator(dtype=tf.quint16)
+        mask_datagen = ImageDataGenerator(dtype=tf.quint16)
 
     image_generator = image_datagen.flow_from_directory(
         train_data_dir + '/' + class_train,
@@ -242,7 +252,7 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
         seed=1)
     train_generator = zip(image_generator, mask_generator)
     for (img, mask) in train_generator:
-        img, mask = adjustData(img,mask)
+        img, mask = adjustData(img, mask, class_train)
         yield (img, mask)
 
     return train_generator
@@ -252,7 +262,7 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
 
 
 
-def simpleSGD(datasetpath, epochs):
+def simpleSGD(datasetpath, epochs, name):
     ''' Simple SGD algorithm for 32x32 images
         args:
             x_train: training images
@@ -265,8 +275,9 @@ def simpleSGD(datasetpath, epochs):
             SGD_model: model fitted
     '''
 
+    model_name = name + '.h5'
 
-    checkpointer = ModelCheckpoint('best_val_loss.h5', verbose=1, save_best_only=True)
+    checkpointer = ModelCheckpoint(model_name, verbose=1, save_best_only=True)
 
     history = History()
 
@@ -293,7 +304,7 @@ def simpleSGD(datasetpath, epochs):
     len_training = len(os.listdir(datasetpath + 'train/images'))
     len_validation = len(os.listdir(datasetpath + 'validation/images'))
 
-    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/batch_size, steps_per_epoch=len_training/batch_size, epochs=epochs, shuffle=True, callbacks=callbacks)
+    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/batch_size, steps_per_epoch=len_training/batch_size, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=2)
 
     # Train the model, doing validation at the end of each epoch.
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
@@ -301,7 +312,7 @@ def simpleSGD(datasetpath, epochs):
 
     # test_model(x_train, y_train, model)
 
-    plots.history(hist)
+    plots.history(hist, name)
     return model
 
 
@@ -401,7 +412,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, frac = 1, bs = 3, epo = 1, comms_round = 200, patience = 15):
+def fedAvg(datasetpath, nbrclients, name, frac = 1, bs = 3, epo = 1, comms_round = 200, patience = 15):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -415,6 +426,8 @@ def fedAvg(datasetpath, nbrclients, frac = 1, bs = 3, epo = 1, comms_round = 200
             returns:
                 global_acc: the global accuracy after comms_round rounds
     '''
+
+    model_name = name + '.h5'
 
     best_test_acc = 0
     test_accs = []
@@ -489,7 +502,7 @@ def fedAvg(datasetpath, nbrclients, frac = 1, bs = 3, epo = 1, comms_round = 200
 
             train_acc = local_model.fit_generator(training_generator,
                                        steps_per_epoch=len_training / bs, epochs=epo, shuffle=True,
-                                       callbacks=callbacks)
+                                       callbacks=callbacks, verbose=2)
 
             # scale the model weights and add to list
 
@@ -532,7 +545,7 @@ def fedAvg(datasetpath, nbrclients, frac = 1, bs = 3, epo = 1, comms_round = 200
             print("Dice score improved: from " + str(best_test_acc) + " to: " + str(test_acc))
             best_test_acc = test_acc
             patience_wait = 0
-            global_model.save('fedAvg_best_model.h5')
+            global_model.save(model_name)
         else:
             print("Dice score didn't improve, got a dice score of " + str(test_acc) + " but best is still " + str(best_test_acc) )
             patience_wait += 1
@@ -548,7 +561,7 @@ def fedAvg(datasetpath, nbrclients, frac = 1, bs = 3, epo = 1, comms_round = 200
     print(train_acc.history['dice_coef'])
     print(test_accs)
 
-    plots.history_fedavg(train_acc.history['dice_coef'], test_accs, len(clients))
+    plots.history_fedavg(train_acc.history['dice_coef'], test_accs, len(clients), name)
 
     return global_model
 

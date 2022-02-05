@@ -7,13 +7,8 @@ import os
 import matplotlib.pyplot as plt
 import imageio
 
-#yellow = 215, purple = 30
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 storing_path = "NSCLC-Radiomics/manifest-1603198545583"
-
-MEAN = -741.7384087183515
-STD = 432.83608694943786
-
 
 def sorted_alphanumeric(data):
     """ Sort the data alphanumerically. allows to have mask_2 before mask_10 for example"""
