@@ -203,10 +203,11 @@ def adjustData(img, mask, class_train):
         # plt.imshow(image, cmap='gray', vmin=0, vmax=65535)
         # plt.show()
 
-    if class_train == 'train':
-        brightness = random.uniform(0.98, 1.02)
-        for i in range(len(img)):
-            img[i] = img[i] * brightness
+    # Random brightness change
+    # if class_train == 'train':
+    #     brightness = random.uniform(0.98, 1.02)
+    #     for i in range(len(img)):
+    #         img[i] = img[i] * brightness
 
     img = img-MEAN
     img = img/STD
@@ -228,11 +229,11 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
     '''
 
     if(class_train == 'train'):
-        image_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=20)
-        mask_datagen = ImageDataGenerator(zoom_range=0.05, rotation_range=20)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16)
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16)
     elif(class_train == 'validation'):
-        image_datagen = ImageDataGenerator(dtype=tf.quint16)
-        mask_datagen = ImageDataGenerator(dtype=tf.quint16)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16)
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16)
 
     image_generator = image_datagen.flow_from_directory(
         train_data_dir + '/' + class_train,
