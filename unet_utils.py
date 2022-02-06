@@ -204,10 +204,10 @@ def adjustData(img, mask, class_train):
         # plt.show()
 
     # Random brightness change
-    # if class_train == 'train':
-    #     brightness = random.uniform(0.98, 1.02)
-    #     for i in range(len(img)):
-    #         img[i] = img[i] * brightness
+    if class_train == 'train':
+        brightness = random.uniform(0.99, 1.01)
+        for i in range(len(img)):
+            img[i] = img[i] * brightness
 
     img = img-MEAN
     img = img/STD
@@ -229,8 +229,8 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
     '''
 
     if(class_train == 'train'):
-        image_datagen = ImageDataGenerator(dtype=tf.uint16)
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.03, rotation_range=5)
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.03, rotation_range=5)
     elif(class_train == 'validation'):
         image_datagen = ImageDataGenerator(dtype=tf.uint16)
         mask_datagen = ImageDataGenerator(dtype=tf.uint16)
