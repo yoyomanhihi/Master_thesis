@@ -59,7 +59,7 @@ def load_and_evaluate(datasetpath, model):
     # ponderated_acc = utils.test_model_ponderated(x_test, y_test, model)
     # print("ponderated dice: " + str(ponderated_acc))
 
-build_and_save(datasetpath=datasetpath, epochs=101)
+build_and_save(datasetpath=datasetpath, epochs=100)
 # build_and_save_fedavg(datasetpath=datasetpath_fedAvg, nbclients=3)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
-# load_and_evaluate('datasets/dataset_heart', 'models/heart_big_dataaugm_15epochs.h5')
+# load_and_evaluate('datasets/dataset_example', 'models/heart_big_dataaugm_15epochs.h5')

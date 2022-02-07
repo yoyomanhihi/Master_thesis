@@ -198,7 +198,7 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
             class_mode=None,
             color_mode='grayscale',
             target_size=(512, 512),
-            batch_size=3,
+            batch_size=1,
             shuffle=True,
             seed=1)
         mask_generator = mask_datagen.flow_from_directory(
@@ -207,7 +207,7 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
             class_mode=None,
             color_mode='grayscale',
             target_size=(512, 512),
-            batch_size=3,
+            batch_size=1,
             shuffle=True,
             seed=1)
 
