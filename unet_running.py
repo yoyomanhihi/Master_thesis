@@ -51,9 +51,6 @@ def load_and_evaluate(datasetpath, model):
 
     SGD_acc = utils.test_model(datasetpath, model)
 
-    print(SGD_acc[2])
-    print(unet_utils.get_average_number_of_true_pixels(datasetpath))
-
     ponderated_dice = SGD_acc[2] / unet_utils.get_average_number_of_true_pixels(datasetpath)
     print('ponderated dice: ' + str(ponderated_dice))
 
@@ -65,4 +62,4 @@ def load_and_evaluate(datasetpath, model):
 build_and_save(datasetpath=datasetpath, epochs=100)
 # build_and_save_fedavg(datasetpath=datasetpath_fedAvg, nbclients=3)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
-# load_and_evaluate('datasets/dataset_heart', 'models/heart_no_dataaugm_21epochs.h5')
+# load_and_evaluate('datasets/dataset_heart', 'models/heart_big_dataaugm_15epochs.h5')
