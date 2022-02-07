@@ -51,7 +51,7 @@ def dice_coef_ponderated(y_true, y_pred):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
-    return ((2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)) * K.sum(y_true)
+    return K.sum(y_true) * ((2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth))
 
 
 def dice_coef_loss_ponderated(y_true, y_pred):
@@ -71,6 +71,19 @@ def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
 
 
+def get_average_number_of_true_pixels(datasetpath):
+    true_pixels = 0
+    masks_path = datasetpath + '/validation/masks'
+    for mask_file in os.listdir(masks_path):
+        mask_path = masks_path + '/' + mask_file
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        mask = mask / 255
+        mask[mask > 0.5] = 1
+        mask[mask <= 0.5] = 0
+        true_pixels += np.sum(mask)
+    return true_pixels / len(os.listdir(masks_path))
+
+
 # Dice Coefficient to work outside Tensorflow
 def dice_coef_2(y_true, y_pred):
     side = len(y_true[0])
@@ -85,36 +98,6 @@ def load(path):
     with open(path, 'rb') as f:
         data = pickle.load(f)
         return data
-
-
-def prepareTrainingData(dataset_path):
-    dataset = load(dataset_path)
-    dataset = np.array(dataset)
-    x_train = []
-    y_train = []
-    for elem in dataset:
-        x_train.append(elem[0])
-        y_train.append(elem[1])
-    x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
-    y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
-    return x_train, y_train
-
-
-def prepareTrainTest(dataset_path):
-    dataset = load(dataset_path)
-    dataset = np.array(dataset)
-    size = len(dataset)
-    train_size = int(0.8 * size)
-    inputs = []
-    outputs = []
-    for elem in dataset:
-        inputs.append(elem[0])
-        outputs.append(elem[1])
-    x_train = inputs[:train_size]
-    y_train = outputs[:train_size]
-    x_test = inputs[train_size:]
-    y_test = outputs[train_size:]
-    return x_train, y_train, x_test, y_test
 
 
 def get_model():
@@ -165,35 +148,11 @@ def get_model():
     return model
 
 
-
-def test_model(x_test, y_test, model):
-    score = 0
-    nbrelems = 0
-    test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
-    for (X_test, Y_test) in test_batched:
-        predictions = model.predict(X_test, batch_size=3)
-        Y_test = np.array(Y_test)
-        for i in range(len(Y_test)):
-            coef = dice_coef_2(Y_test[i], predictions[i])
-            score += coef
-            nbrelems += 1
-        K.clear_session()
-    return score / nbrelems
-
-
-def test_model_ponderated(x_test, y_test, model):
-    score = 0
-    nbrpixels = 0
-    test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
-    for (X_test, Y_test) in test_batched:
-        predictions = model.predict(X_test, batch_size=3)
-        Y_test = np.array(Y_test)
-        for i in range(len(Y_test)):
-            coef = dice_coef_2(Y_test[i], predictions[i])
-            score += coef * np.sum(Y_test[i])
-            nbrpixels += np.sum(Y_test[i])
-        K.clear_session()
-    return score / nbrpixels
+def test_model(datasetpath, model):
+    validation_generator = dataAugmentation(datasetpath, class_train='validation')
+    len_validation = len(os.listdir(datasetpath + '/validation/images'))
+    test_acc = model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
+    return test_acc
 
 
 def adjustData(img, mask, class_train):
@@ -221,7 +180,7 @@ def adjustData(img, mask, class_train):
     return (img,mask)
 
 
-def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
+def dataAugmentation(train_data_dir, class_train = 'train'):
     '''
     can generate image and mask at the same time
     use the same seed for image_datagen and mask_datagen to ensure the transformation for image and mask is the same
@@ -229,38 +188,60 @@ def dataAugmentation(train_data_dir, class_train = 'train', batch_size = 3):
     '''
 
     if(class_train == 'train'):
+
         image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.03, rotation_range=5)
         mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.03, rotation_range=5)
+
+        image_generator = image_datagen.flow_from_directory(
+            train_data_dir + '/' + class_train,
+            classes=['images'],
+            class_mode=None,
+            color_mode='grayscale',
+            target_size=(512, 512),
+            batch_size=3,
+            shuffle=True,
+            seed=1)
+        mask_generator = mask_datagen.flow_from_directory(
+            train_data_dir + '/' + class_train,
+            classes=['masks'],
+            class_mode=None,
+            color_mode='grayscale',
+            target_size=(512, 512),
+            batch_size=3,
+            shuffle=True,
+            seed=1)
+
     elif(class_train == 'validation'):
+
         image_datagen = ImageDataGenerator(dtype=tf.uint16)
         mask_datagen = ImageDataGenerator(dtype=tf.uint16)
 
-    image_generator = image_datagen.flow_from_directory(
-        train_data_dir + '/' + class_train,
-        classes=['images'],
-        class_mode=None,
-        color_mode='grayscale',
-        target_size=(512, 512),
-        batch_size=batch_size,
-        seed=1)
-    mask_generator = mask_datagen.flow_from_directory(
-        train_data_dir + '/' + class_train,
-        classes=['masks'],
-        class_mode=None,
-        color_mode='grayscale',
-        target_size=(512, 512),
-        batch_size=batch_size,
-        seed=1)
+        image_generator = image_datagen.flow_from_directory(
+            train_data_dir + '/' + class_train,
+            classes=['images'],
+            class_mode=None,
+            color_mode='grayscale',
+            target_size=(512, 512),
+            batch_size=1,
+            shuffle=False,
+            seed=1)
+        mask_generator = mask_datagen.flow_from_directory(
+            train_data_dir + '/' + class_train,
+            classes=['masks'],
+            class_mode=None,
+            color_mode='grayscale',
+            target_size=(512, 512),
+            batch_size=1,
+            shuffle=False,
+            seed=1)
+
+
     train_generator = zip(image_generator, mask_generator)
     for (img, mask) in train_generator:
         img, mask = adjustData(img, mask, class_train)
         yield (img, mask)
 
     return train_generator
-
-
-
-
 
 
 def simpleSGD(datasetpath, epochs, name):
@@ -293,19 +274,18 @@ def simpleSGD(datasetpath, epochs, name):
     loss_metric = dice_coef_loss
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     lr = lr_scheduler.TanhDecayScheduler()
-    batch_size = 3
 
     model = get_model()
 
     model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics) # Check
 
-    training_generator = dataAugmentation(datasetpath, class_train='train', batch_size=batch_size)
-    validation_generator = dataAugmentation(datasetpath, class_train='validation', batch_size=batch_size)
+    training_generator = dataAugmentation(datasetpath, class_train='train')
+    validation_generator = dataAugmentation(datasetpath, class_train='validation')
 
     len_training = len(os.listdir(datasetpath + 'train/images'))
     len_validation = len(os.listdir(datasetpath + 'validation/images'))
 
-    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/batch_size, steps_per_epoch=len_training/batch_size, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=2)
+    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/3, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=2)
 
     # Train the model, doing validation at the end of each epoch.
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
@@ -315,44 +295,6 @@ def simpleSGD(datasetpath, epochs, name):
 
     plots.history(hist, name)
     return model
-
-
-
-def createClients(listdatasetspaths):
-    ''' Create dictionary with the clients and their data
-        args:
-            listdatasetspaths: list of paths to the different detasets
-        return:
-            clients: dictionary of the different clients and their data. The entries are of the form client_1, client_2 etc
-            x_test: test set data coming from the multiple clients
-            y_test: test set labels coming from the multiple clients'''
-    clients = {}
-    x_test = []
-    y_test = []
-    clientnbr = 0
-    for datasetpath in listdatasetspaths:
-        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest(datasetpath)
-        clientname = "client_" + str(clientnbr)
-        data = list(zip(x_train_client, y_train_client))
-        clients[clientname] = data
-        x_test.extend(x_test_client)
-        y_test.extend(y_test_client)
-        clientnbr+=1
-    return clients, x_test, y_test
-
-
-
-def batch_data(data_shard, bs=3):
-    ''' Takes in a clients data shard and create a tfds object off it
-        args:
-            shard: a data, label constituting a client's data shard
-            bs:batch size
-        return:
-            tfds object'''
-    # seperate shard into data and labels lists
-    data, label = zip(*data_shard)
-    dataset = tf.data.Dataset.from_tensor_slices((list(data), list(label)))
-    return dataset.shuffle(len(label)).batch(bs)
 
 
 def get_ratio_of_clients(nbrclients, datasetpath):
@@ -372,7 +314,6 @@ def get_ratio_of_clients(nbrclients, datasetpath):
 
     sizes = np.array(sizes)
     return sizes/totalsize
-
 
 
 def weight_scaling_factor(clients_trn_data, client_name, frac):
@@ -413,7 +354,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, bs = 3, epo = 1, comms_round = 200, patience = 15):
+def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, patience = 15):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -444,7 +385,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, bs = 3, epo = 1, comms_round
     # for (client_name, data) in clients.items():
     #     clients_batched[client_name] = batch_data(data, bs = bs)
 
-    validation_generator = dataAugmentation(datasetpath, class_train='validation', batch_size=bs)
+    validation_generator = dataAugmentation(datasetpath, class_train='validation')
 
     history = History()
 
@@ -497,12 +438,12 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, bs = 3, epo = 1, comms_round
             # set local model weight to the weight of the global model
             local_model.set_weights(global_weights)
 
-            training_generator = dataAugmentation(client_path, class_train='train', batch_size=bs)
+            training_generator = dataAugmentation(client_path, class_train='train')
 
             len_training = len(os.listdir(client_path + '/train/images'))
 
             train_acc = local_model.fit_generator(training_generator,
-                                       steps_per_epoch=len_training / bs, epochs=epo, shuffle=True,
+                                       steps_per_epoch=len_training / 3, epochs=epo, shuffle=True,
                                        callbacks=callbacks, verbose=2)
 
             # scale the model weights and add to list
@@ -531,7 +472,8 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, bs = 3, epo = 1, comms_round
         # for (X_test, Y_test) in test_batched:
 
         # test_acc = test_model(X_test, Y_test, global_model)
-        test_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/bs)
+        validation_generator.reset()
+        test_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/1)
         print(type(test_acc))
         print('test_acc: ' + str(test_acc))
         print(len(test_acc))
@@ -679,9 +621,81 @@ def segmentation_2d(model, client_path, mask_path, image_path, img_nbr, organ):
     finalPrediction(cntr, predictions)
 
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-    mask[mask < 0.5] = 0  # Set out of tumor to 0
+    mask[mask <= 0.5] = 0  # Set out of tumor to 0
     mask[mask > 0.5] = 1  # Set out of tumor to 1
     dice = dice_coef_2(mask, predictions)
     print("dice accuracy: " + str(dice))
 
     return cntr, predictions
+
+
+
+
+
+'''
+def prepareTrainingData(dataset_path):
+    dataset = load(dataset_path)
+    dataset = np.array(dataset)
+    x_train = []
+    y_train = []
+    for elem in dataset:
+        x_train.append(elem[0])
+        y_train.append(elem[1])
+    x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
+    y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
+    return x_train, y_train
+
+
+def prepareTrainTest(dataset_path):
+    dataset = load(dataset_path)
+    dataset = np.array(dataset)
+    size = len(dataset)
+    train_size = int(0.8 * size)
+    inputs = []
+    outputs = []
+    for elem in dataset:
+        inputs.append(elem[0])
+        outputs.append(elem[1])
+    x_train = inputs[:train_size]
+    y_train = outputs[:train_size]
+    x_test = inputs[train_size:]
+    y_test = outputs[train_size:]
+    return x_train, y_train, x_test, y_test
+'''
+
+'''
+def createClients(listdatasetspaths):
+     Create dictionary with the clients and their data
+        args:
+            listdatasetspaths: list of paths to the different detasets
+        return:
+            clients: dictionary of the different clients and their data. The entries are of the form client_1, client_2 etc
+            x_test: test set data coming from the multiple clients
+            y_test: test set labels coming from the multiple clients
+    clients = {}
+    x_test = []
+    y_test = []
+    clientnbr = 0
+    for datasetpath in listdatasetspaths:
+        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest(datasetpath)
+        clientname = "client_" + str(clientnbr)
+        data = list(zip(x_train_client, y_train_client))
+        clients[clientname] = data
+        x_test.extend(x_test_client)
+        y_test.extend(y_test_client)
+        clientnbr+=1
+    return clients, x_test, y_test
+    
+    
+def batch_data(data_shard, bs=3):
+    Takes in a clients data shard and create a tfds object off it
+        args:
+            shard: a data, label constituting a client's data shard
+            bs:batch size
+        return:
+            tfds object
+    # seperate shard into data and labels lists
+    data, label = zip(*data_shard)
+    dataset = tf.data.Dataset.from_tensor_slices((list(data), list(label)))
+    return dataset.shuffle(len(label)).batch(bs)
+'''

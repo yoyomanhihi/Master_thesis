@@ -4,9 +4,9 @@ import tensorflow as tf
 from tensorflow import keras
 import sys
 
-client_nbr = 107
-img_nbr = 43
-organ = "esophagus"
+client_nbr = 422
+img_nbr = 56
+organ = "heart"
 client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-' + str(client_nbr)
 mask_path = 'NSCLC-Radiomics/manifest-1603198545583/masks_' + str(organ) + "/LUNG1-" + str(client_nbr) + "/mask_" + str(img_nbr) + ".png"
 image_path = 'NSCLC-Radiomics/manifest-1603198545583/images' + "/LUNG1-" + str(client_nbr) + "/image_" + str(img_nbr) + ".png"
@@ -42,16 +42,27 @@ def load_and_segment(model_path):
 
 
 
-def load_and_evaluate():
-    model = keras.models.load_model('models/fedAvg_test_dataaugm.h5', compile=False)
+def load_and_evaluate(datasetpath, model):
+    model = keras.models.load_model(model, compile=False)
 
-    x_test, y_test = utils.prepareTrainingData('datasets/test_heart_60-100(341-395)_1of3_geq8000000.pickle')
+    optimizer = tf.keras.optimizers.Adam
 
-    SGD_acc = utils.test_model(x_test, y_test, model)
+    model.compile(optimizer=optimizer(), metrics = [unet_utils.dice_coef_loss, unet_utils.dice_coef_loss_ponderated])
+
+    SGD_acc = utils.test_model(datasetpath, model)
+
+    print(SGD_acc[2])
+    print(unet_utils.get_average_number_of_true_pixels(datasetpath))
+
+    ponderated_dice = SGD_acc[2] / unet_utils.get_average_number_of_true_pixels(datasetpath)
+    print('ponderated dice: ' + str(ponderated_dice))
 
     print("model dice score on test dataset: " + str(SGD_acc))
 
+    # ponderated_acc = utils.test_model_ponderated(x_test, y_test, model)
+    # print("ponderated dice: " + str(ponderated_acc))
+
 build_and_save(datasetpath=datasetpath, epochs=100)
 # build_and_save_fedavg(datasetpath=datasetpath_fedAvg, nbclients=3)
-# load_and_segment('models/fedAvg_test_dataaugm.h5')
-# load_and_evaluate()
+# load_and_segment('models/heart_no_dataaugm_21epochs.h5')
+# load_and_evaluate('datasets/dataset_heart', 'models/heart_no_dataaugm_21epochs.h5')
