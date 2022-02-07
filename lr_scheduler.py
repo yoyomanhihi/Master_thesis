@@ -94,7 +94,7 @@ class SinScheduler(CustomScheduler):
 
 
 class TanhDecayScheduler(CustomScheduler):
-    def __init__(self, period=2048, minval=1e-4, maxval=2e-4,
+    def __init__(self, period=2048, minval=5e-5, maxval=1e-4,
                  **kwargs):
         super(TanhDecayScheduler, self).__init__(**kwargs)
         self.period = float(period)
