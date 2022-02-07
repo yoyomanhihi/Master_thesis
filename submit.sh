@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #SBATCH --job-name=name
-#SBATCH --output="output.txt" 
+#SBATCH --output="output_small.txt" 
 #
 #SBATCH --ntasks=1
 #SBATCH --time=36:00:00
@@ -19,4 +19,4 @@ srun pip3 install --user -r requirements.txt
 srun pip3 install --user tensorflow
 srun nvidia-smi
 srun python3 -c 'from tensorflow.python.client import device_lib;print(device_lib.list_local_devices())'
-srun python3 unet_running.py
+srun python3 unet_running.py smalldataaugm
