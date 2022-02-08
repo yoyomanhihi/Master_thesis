@@ -13,9 +13,8 @@ image_path = 'NSCLC-Radiomics/manifest-1603198545583/images' + "/LUNG1-" + str(c
 datasetpath = 'datasets/dataset_heart/'
 datasetpath_fedAvg = 'datasets/dataset_heart_fedAvg/'
 name = sys.argv[1]
-print('name: ' + str(name))
 
-def build_and_save(datasetpath, epochs):
+def build_and_save(datasetpath, epochs, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -24,7 +23,7 @@ def build_and_save(datasetpath, epochs):
     utils.simpleSGD(datasetpath=datasetpath, epochs=epochs, name=name)
 
 
-def build_and_save_fedavg(datasetpath, nbclients):
+def build_and_save_fedavg(datasetpath, nbclients, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     # print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -56,7 +55,7 @@ def load_and_evaluate(datasetpath, model):
     ponderated_dice = SGD_acc[2] / unet_utils.get_average_number_of_true_pixels(datasetpath)
     print('ponderated dice: ' + str(-ponderated_dice))
 
-build_and_save(datasetpath=datasetpath, epochs=100)
+# build_and_save(datasetpath=datasetpath, epochs=100)
 # build_and_save_fedavg(datasetpath=datasetpath_g, nbclients=3)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
 # load_and_evaluate('datasets/dataset_heart', 'models/heart_small_dataaugm_11epochs.h5')

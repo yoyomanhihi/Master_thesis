@@ -1,27 +1,22 @@
-import FL_utils
-import IID_fedAvg as IID
-import non_IID_fedAvg as non_IID
-import medical_preprocessing_2d as med_prep_2d
-import medical_SGD as med_SGD
+import unet_running
 import mailSender
-import numpy
-import tensorflow
+import sys
+
+
+name = sys.argv[1]
+print('name: ' + str(name))
 
 def main():
 
     try:
         # results = med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)
-        results = med_SGD.make_all()
-        string = ("accuracy full tumor 2 dense: " + str(results))
+        results = unet_running.build_and_save(datasetpath='datasets/dataset_heart', epochs=100, name=name)
+        # string = ("accuracy with lr: " + str(results))
 
-        print(string)
-        mailSender.sendResults(False, string)
+        # print(string)
+        mailSender.sendResults(False, None)
 
     except Exception as e:
         mailSender.sendResults(True, None)
 
-
-# main()
-
-med_SGD.make_all()
-# med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)
+main()
