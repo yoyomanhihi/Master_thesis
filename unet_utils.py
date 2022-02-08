@@ -273,7 +273,8 @@ def simpleSGD(datasetpath, epochs, name):
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
-    lr = lr_scheduler.TanhDecayScheduler()
+    # lr = lr_scheduler.TanhDecayScheduler()
+    lr = 1e-4
 
     model = get_model()
 
