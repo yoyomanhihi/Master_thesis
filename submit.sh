@@ -19,4 +19,4 @@ srun pip3 install --user -r requirements.txt
 srun pip3 install --user tensorflow
 srun nvidia-smi
 srun python3 -c 'from tensorflow.python.client import device_lib;print(device_lib.list_local_devices())'
-srun python3 unet_running.py smalldataaugm
+srun python3 main.py lr2e-5
