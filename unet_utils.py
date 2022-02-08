@@ -274,7 +274,7 @@ def simpleSGD(datasetpath, epochs, name):
     loss_metric = dice_coef_loss
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     # lr = lr_scheduler.TanhDecayScheduler()
-    lr = 1e-4
+    lr = 2e-5
 
     model = get_model()
 
@@ -286,7 +286,7 @@ def simpleSGD(datasetpath, epochs, name):
     len_training = len(os.listdir(datasetpath + 'train/images'))
     len_validation = len(os.listdir(datasetpath + 'validation/images'))
 
-    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=2)
+    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1)
 
     # Train the model, doing validation at the end of each epoch.
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
@@ -445,7 +445,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, 
 
             train_acc = local_model.fit_generator(training_generator,
                                        steps_per_epoch=len_training / 1, epochs=epo, shuffle=True,
-                                       callbacks=callbacks, verbose=2)
+                                       callbacks=callbacks, verbose=1)
 
             # scale the model weights and add to list
 
