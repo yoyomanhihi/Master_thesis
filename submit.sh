@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #SBATCH --job-name=name
-#SBATCH --output="nodataaugm.txt"
+#SBATCH --output="nodataaugm.txt" 
 #
 #SBATCH --ntasks=1
 #SBATCH --time=36:00:00
