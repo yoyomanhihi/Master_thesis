@@ -33,6 +33,7 @@ def sendResults(failed, results):
     # Try to log in to server and send email
     try:
         server = smtplib.SMTP(smtp_server, port)
+        print("here")
         server.ehlo()  # Can be omitted
         server.starttls(context=context)  # Secure the connection
         server.ehlo()  # Can be omitted

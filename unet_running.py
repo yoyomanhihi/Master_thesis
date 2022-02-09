@@ -58,4 +58,4 @@ def load_and_evaluate(datasetpath, model):
 # build_and_save(datasetpath=datasetpath, epochs=100)
 # build_and_save_fedavg(datasetpath=datasetpath_g, nbclients=3)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
-# load_and_evaluate('datasets/dataset_heart', 'models/heart_small_dataaugm_11epochs.h5')
+# load_and_evaluate('datasets/dataset_heart', 'models/heart_lr2e-5_smalldataaugm_38epochs.h5')

@@ -1,8 +1,6 @@
 import gc
 import pickle
 import numpy as np
-from tensorflow.keras.layers import Conv2D
-from tensorflow.keras.layers import MaxPooling2D
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
@@ -163,10 +161,10 @@ def adjustData(img, mask, class_train):
         # plt.show()
 
     # Random brightness change
-    if class_train == 'train':
-        brightness = random.uniform(0.99, 1.01)
-        for i in range(len(img)):
-            img[i] = img[i] * brightness
+    # if class_train == 'train': # Check
+    #     brightness = random.uniform(0.99, 1.01)
+    #     for i in range(len(img)):
+    #         img[i] = img[i] * brightness
 
     img = img-MEAN
     img = img/STD
@@ -189,8 +187,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.03, rotation_range=5)
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.03, rotation_range=5)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16) # Check
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
@@ -274,11 +272,11 @@ def simpleSGD(datasetpath, epochs, name):
     loss_metric = dice_coef_loss
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     # lr = lr_scheduler.TanhDecayScheduler()
-    lr = 2e-5
+    lr = 5e-5
 
     model = get_model()
 
-    model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics) # Check
+    model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 
     training_generator = dataAugmentation(datasetpath, class_train='train')
     validation_generator = dataAugmentation(datasetpath, class_train='validation')
@@ -397,7 +395,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, 
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss
     metrics = [dice_coef, "accuracy"]
-    lr = 1e-4
+    lr = 5e-5
 
     # initialize global model
     global_model = get_model()
