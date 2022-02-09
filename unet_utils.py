@@ -284,7 +284,7 @@ def simpleSGD(datasetpath, epochs, name):
     len_training = len(os.listdir(datasetpath + 'train/images'))
     len_validation = len(os.listdir(datasetpath + 'validation/images'))
 
-    hist = model.fit_generator(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1)
+    hist = model.fit(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1)
 
     # Train the model, doing validation at the end of each epoch.
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
@@ -441,7 +441,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, 
 
             len_training = len(os.listdir(client_path + '/train/images'))
 
-            train_acc = local_model.fit_generator(training_generator,
+            train_acc = local_model.fit(training_generator,
                                        steps_per_epoch=len_training / 1, epochs=epo, shuffle=True,
                                        callbacks=callbacks, verbose=1)
 
