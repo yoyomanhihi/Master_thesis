@@ -13,7 +13,7 @@ import tensorflow as tf
 import os
 import cv2
 import random
-import plots
+# import plots
 import imageio
 
 
@@ -287,7 +287,7 @@ def simpleSGD(datasetpath, epochs, name):
 
     # test_model(x_train, y_train, model)
 
-    plots.history(hist, name)
+    # plots.history(hist, name)
     return model
 
 
@@ -498,7 +498,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, 
     print(train_acc.history['dice_coef'])
     print(test_accs)
 
-    plots.history_fedavg(train_acc.history['dice_coef'], test_accs, len(clients), name)
+    # plots.history_fedavg(train_acc.history['dice_coef'], test_accs, len(clients), name)
 
     return global_model
 
