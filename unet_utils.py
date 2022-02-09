@@ -276,8 +276,8 @@ def simpleSGD(datasetpath, epochs, name):
     training_generator = dataAugmentation(datasetpath, class_train='train')
     validation_generator = dataAugmentation(datasetpath, class_train='validation')
 
-    len_training = len(os.listdir(datasetpath + 'train/images'))
-    len_validation = len(os.listdir(datasetpath + 'validation/images'))
+    len_training = len(os.listdir(datasetpath + '/train/images'))
+    len_validation = len(os.listdir(datasetpath + '/validation/images'))
 
     hist = model.fit(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1)
 
@@ -369,7 +369,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, 
     test_accs = []
     train_acc = []
     patience_wait = 0
-    len_validation = len(os.listdir(datasetpath + 'validation/images'))
+    len_validation = len(os.listdir(datasetpath + '/validation/images'))
 
     clients_weight = get_ratio_of_clients(nbrclients, datasetpath)
     print("clients_weight: " + str(clients_weight))
