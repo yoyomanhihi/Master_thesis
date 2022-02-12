@@ -15,6 +15,7 @@ import cv2
 import random
 import plots
 import imageio
+import lr_scheduler
 
 
 MEAN = 4611.838943481445
@@ -156,10 +157,10 @@ def adjustData(img, mask, class_train):
         # plt.show()
 
     # Random brightness change
-    # if class_train == 'train': # Check
-    #     brightness = random.uniform(0.99, 1.01)
-    #     for i in range(len(img)):
-    #         img[i] = img[i] * brightness
+    if class_train == 'train': # Check
+        brightness = random.uniform(0.99, 1.01)
+        for i in range(len(img)):
+            img[i] = img[i] * brightness
 
     img = img-MEAN
     img = img/STD
@@ -264,7 +265,7 @@ def simpleSGD(datasetpath, epochs, name):
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss
+    loss_metric = dice_coef_loss_ponderated
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     # lr = lr_scheduler.TanhDecayScheduler()
     lr = 5e-5
@@ -348,7 +349,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, patience = 15):
+def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 15):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -372,6 +373,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, 
     len_validation = len(os.listdir(datasetpath + '/validation/images'))
 
     clients_weight = get_ratio_of_clients(nbrclients, datasetpath)
+
     print("clients_weight: " + str(clients_weight))
 
     # process and batch the training data for each client
@@ -451,7 +453,6 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 200, 
 
             # clear session to free memory after each communication round
             K.clear_session()
-            gc.collect()
 
         # to get the average over all the local model, we simply take the sum of the scaled weights
         average_weights = sum_scaled_weights(scaled_local_weight_list)

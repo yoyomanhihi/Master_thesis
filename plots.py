@@ -1,6 +1,5 @@
 # Visualize training history
 import matplotlib.pyplot as plt
-import numpy
 
 
 def history(history, name):
