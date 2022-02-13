@@ -302,7 +302,7 @@ def get_ratio_of_clients(nbrclients, datasetpath):
     totalsize = 0
 
     for i in range(nbrclients):
-        client_path = datasetpath + str(i) + "/train/images"
+        client_path = datasetpath + '/' + str(i) + "/train/images"
         client_size = len(os.listdir(client_path))
         sizes.append(client_size)
         totalsize += client_size
@@ -391,7 +391,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
 
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss
-    metrics = [dice_coef, "accuracy"]
+    metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     lr = 5e-5
 
     # initialize global model
@@ -400,7 +400,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
     global_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)  # Check
 
 
-    # commence global training loop
+    # start global training loop
     for comm_round in range(comms_round):
 
         print('comm_round: ' + str(comm_round))
@@ -425,7 +425,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
         # for client in client_names[:nbrclients]:
         for client in clients[:nbrclients]:
 
-            client_path = datasetpath + str(client)
+            client_path = datasetpath + '/' + str(client)
 
             local_model = get_model()
 
