@@ -467,7 +467,6 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
         # for (X_test, Y_test) in test_batched:
 
         # test_acc = test_model(X_test, Y_test, global_model)
-        validation_generator.reset()
         test_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/1)
         print(type(test_acc))
         print('test_acc: ' + str(test_acc))
