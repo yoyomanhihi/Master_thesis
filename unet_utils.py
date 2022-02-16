@@ -183,8 +183,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.06, rotation_range=20)
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.06, rotation_range=20)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
@@ -417,7 +417,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
 
         clients = list(range(0, nbrclients))
 
-        random.shuffle(clients)
+        # random.shuffle(clients)
         print('clients: ' + str(clients))
 
         # loop through each client and create new local model
