@@ -11,7 +11,7 @@ def history(history, name):
     plt.title("Dice's coefficient by epoch")
     plt.ylabel("Dice's coefficient")
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
+    plt.legend(['train', 'test'], loc='lower right')
     plt.savefig(plot_name)
     plt.show()
 
@@ -30,6 +30,6 @@ def history_fedavg(train_accs, test_accs, clientsnbr, name):
     plt.title('dice score by epoch')
     plt.ylabel('dice score')
     plt.xlabel('epoch')
-    plt.legend(['train client 1', 'train client 2', 'train client 3', 'test'], loc='upper left')
+    plt.legend(['train client 1', 'train client 2', 'train client 3', 'test'], loc='lower right')
     plt.savefig(plot_name)
     plt.show()
