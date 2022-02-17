@@ -349,11 +349,10 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, pa
 
     model_name = name + '.h5'
 
-    best_val_acc = 0
+    best_val_acc = 0.
     val_accs = []
     train_acc = []
     patience_wait = 0
-    len_validation = len(os.listdir(datasetpath + '/validation/images'))
 
     clients_weight = get_ratio_of_clients(nbrclients, datasetpath)
 
@@ -430,7 +429,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, pa
             # scaling_factor = weight_scaling_factor(clients_batched, client, frac)
 
             # scaling_factor = clients_weight[client]
-            scaling_factor = 1/nbrclients # Because small datasets will be train longer
+            scaling_factor = 1./nbrclients # Because small datasets will be train longer
 
             scaled_weights = scale_model_weights(local_model.get_weights(), scaling_factor)
             scaled_local_weight_list.append(scaled_weights)
@@ -452,11 +451,12 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, pa
 
         # val_acc = test_model(X_test, Y_test, global_model)
 
-        mean_val_acc = 0
+        mean_val_acc = 0.
 
         for client in clients[:nbrclients]:
             client_path = datasetpath + '/' + str(client)
             validation_generator = dataAugmentation(client_path, class_train='validation')
+            len_validation = len(os.listdir(client_path + '/validation/images'))
             val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/1)
 
             val_acc=val_acc[1] # Dice's coeff
@@ -481,9 +481,9 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, pa
         if patience_wait >= patience:
             break
 
-        print('Accuracy after {} rounds = {}'.format(comm_round, val_acc))
+        print('Accuracy after {} rounds = {}'.format(comm_round, mean_val_acc))
 
-    print("FINAL ACCURACY: " + str(val_acc))
+    print("FINAL ACCURACY: " + str(mean_val_acc))
     print(train_acc.history['dice_coef'])
     print(val_accs)
 

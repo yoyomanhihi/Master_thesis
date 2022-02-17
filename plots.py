@@ -32,7 +32,6 @@ def history_fedavg(train_accs, val_accs, clientsnbr, name):
             val_accs_client.append(val_accs[j])
         print(val_accs_client)
         plt.plot(val_accs_client)
-    plt.plot(val_accs)
     plt.title('dice score by epoch')
     plt.ylabel('dice score')
     plt.xlabel('epoch')

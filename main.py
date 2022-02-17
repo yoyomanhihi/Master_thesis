@@ -19,4 +19,5 @@ def main():
     except Exception as e:
         mailSender.sendResults(True, None)
 
-main()
+# main()
+unet_running.build_and_save_fedavg(datasetpath='datasets/dataset_heart_fedAvg', nbclients=3, name=name)
