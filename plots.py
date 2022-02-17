@@ -16,7 +16,7 @@ def history(history, name):
     plt.show()
 
 
-def history_fedavg(train_accs, test_accs, clientsnbr, name):
+def history_fedavg(train_accs, val_accs, clientsnbr, name):
 
     plot_name = name + '.png'
 
@@ -26,10 +26,16 @@ def history_fedavg(train_accs, test_accs, clientsnbr, name):
             train_accs_client.append(train_accs[j])
         print(train_accs_client)
         plt.plot(train_accs_client)
-    plt.plot(test_accs)
+    for i in range(clientsnbr):
+        val_accs_client = []
+        for j in range(i, len(val_accs), clientsnbr):
+            val_accs_client.append(val_accs[j])
+        print(val_accs_client)
+        plt.plot(val_accs_client)
+    plt.plot(val_accs)
     plt.title('dice score by epoch')
     plt.ylabel('dice score')
     plt.xlabel('epoch')
-    plt.legend(['train client 1', 'train client 2', 'train client 3', 'test'], loc='lower right')
+    plt.legend(['train client 1', 'train client 2', 'train client 3', 'validation client 1', 'validation client 2', 'validation client 3'], loc='lower right')
     plt.savefig(plot_name)
     plt.show()

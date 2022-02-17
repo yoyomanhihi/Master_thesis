@@ -79,7 +79,8 @@ def generateDatasetFromManyClients(storing_path, organ, train, initclient, endcl
     files = os.listdir(masks_path)
     print(len(files))
     files.sort()
-    end = min(endclient, len(files) - 2)
+    end = min(endclient, len(files))
+    print('end: ' + str(end))
     count = initialcount
     for patient in files[initclient:end]:
         masks_path2 = masks_path + "/" + patient
@@ -100,9 +101,7 @@ def generateAndStore(path, organ, train, initclient, endclient, initialcount):
             evalutation: tuple of the form (count0, count1)
             count0: number of non tumor examples
             count1: number of tumor examples'''
-    dataset = generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount)
-    # dir = "datasets/" + str(name)
-    # storeDataset(dataset, dir)
+    generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount)
 
 
-# generateAndStore("manifest-1557326747206", "heart", "validation", initclient=45, endclient=60, initialcount=102)
+# generateAndStore("manifest-1557326747206", "heart", "test", initclient=53, endclient=60, initialcount=48)

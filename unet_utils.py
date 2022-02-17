@@ -311,23 +311,6 @@ def get_ratio_of_clients(nbrclients, datasetpath):
     return sizes/totalsize
 
 
-def weight_scaling_factor(clients_trn_data, client_name, frac):
-    ''' Calculates the proportion of a client’s local training data with the overall training data held by all clients
-        args:
-            clients_trn_data: dictionary of training data by client
-            client_name: name of the client
-    '''
-    client_names = list(clients_trn_data.keys())
-    # get the batch size
-    bs = list(clients_trn_data[client_name])[0][0].shape[0]
-    # first calculate the total training data points across clients
-    global_count = sum(
-        [tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() for client_name in client_names]) * bs
-    # get the total number of data points held by a client
-    local_count = tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() * bs
-    return (local_count / global_count) / frac
-
-
 def scale_model_weights(weight, scalar):
     '''function for scaling a models weights'''
     weight_final = []
@@ -349,7 +332,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 15):
+def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, patience = 15):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -366,8 +349,8 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
 
     model_name = name + '.h5'
 
-    best_test_acc = 0
-    test_accs = []
+    best_val_acc = 0
+    val_accs = []
     train_acc = []
     patience_wait = 0
     len_validation = len(os.listdir(datasetpath + '/validation/images'))
@@ -381,7 +364,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
     # for (client_name, data) in clients.items():
     #     clients_batched[client_name] = batch_data(data, bs = bs)
 
-    validation_generator = dataAugmentation(datasetpath, class_train='validation')
+    # validation_generator = dataAugmentation(datasetpath, class_train='validation')
 
     history = History()
 
@@ -439,14 +422,15 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
             len_training = len(os.listdir(client_path + '/train/images'))
 
             train_acc = local_model.fit(training_generator,
-                                       steps_per_epoch=len_training / 1, epochs=epo, shuffle=True,
+                                       steps_per_epoch=len_training*(clients_weight[1]/clients_weight[client]), epochs=epo, shuffle=True,
                                        callbacks=callbacks, verbose=1)
 
             # scale the model weights and add to list
 
             # scaling_factor = weight_scaling_factor(clients_batched, client, frac)
 
-            scaling_factor = clients_weight[client]
+            # scaling_factor = clients_weight[client]
+            scaling_factor = 1/nbrclients # Because small datasets will be train longer
 
             scaled_weights = scale_model_weights(local_model.get_weights(), scaling_factor)
             scaled_local_weight_list.append(scaled_weights)
@@ -466,25 +450,30 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
         # test global model and print out metrics after each communications round
         # for (X_test, Y_test) in test_batched:
 
-        # test_acc = test_model(X_test, Y_test, global_model)
-        test_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/1)
-        print(type(test_acc))
-        print('test_acc: ' + str(test_acc))
-        print(len(test_acc))
+        # val_acc = test_model(X_test, Y_test, global_model)
 
-        test_acc=test_acc[1] # Dice's coeff
-        print(test_acc)
+        mean_val_acc = 0
 
-        test_accs.append(test_acc)
+        for client in clients[:nbrclients]:
+            client_path = datasetpath + '/' + str(client)
+            validation_generator = dataAugmentation(client_path, class_train='validation')
+            val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/1)
 
+            val_acc=val_acc[1] # Dice's coeff
+            print(val_acc)
+            mean_val_acc+=val_acc
+
+            val_accs.append(val_acc)
+
+        mean_val_acc = mean_val_acc / nbrclients
         # If best acc so far
-        if test_acc > best_test_acc:
-            print("Dice score improved: from " + str(best_test_acc) + " to: " + str(test_acc))
-            best_test_acc = test_acc
+        if mean_val_acc > best_val_acc:
+            print("Average validation Dice score improved: from " + str(best_val_acc) + " to: " + str(mean_val_acc))
+            best_val_acc = mean_val_acc
             patience_wait = 0
             global_model.save(model_name)
         else:
-            print("Dice score didn't improve, got a dice score of " + str(test_acc) + " but best is still " + str(best_test_acc) )
+            print("Average validation Dice score didn't improve, got a dice score of " + str(val_acc) + " but best is still " + str(best_val_acc) )
             patience_wait += 1
         print("patience_wait = " + str(patience_wait))
 
@@ -492,13 +481,13 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
         if patience_wait >= patience:
             break
 
-        print('Accuracy after {} rounds = {}'.format(comm_round, test_acc))
+        print('Accuracy after {} rounds = {}'.format(comm_round, val_acc))
 
-    print("FINAL ACCURACY: " + str(test_acc))
+    print("FINAL ACCURACY: " + str(val_acc))
     print(train_acc.history['dice_coef'])
-    print(test_accs)
+    print(val_accs)
 
-    plots.history_fedavg(train_acc.history['dice_coef'], test_accs, len(clients), name)
+    plots.history_fedavg(train_acc.history['dice_coef'], val_accs, len(clients), name)
 
     return global_model
 
@@ -573,4 +562,20 @@ def batch_data(data_shard, bs=3):
     data, label = zip(*data_shard)
     dataset = tf.data.Dataset.from_tensor_slices((list(data), list(label)))
     return dataset.shuffle(len(label)).batch(bs)
+    
+def weight_scaling_factor(clients_trn_data, client_name, frac):
+    Calculates the proportion of a client’s local training data with the overall training data held by all clients
+        args:
+            clients_trn_data: dictionary of training data by client
+            client_name: name of the client
+    
+    client_names = list(clients_trn_data.keys())
+    # get the batch size
+    bs = list(clients_trn_data[client_name])[0][0].shape[0]
+    # first calculate the total training data points across clients
+    global_count = sum(
+        [tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() for client_name in client_names]) * bs
+    # get the total number of data points held by a client
+    local_count = tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() * bs
+    return (local_count / global_count) / frac
 '''
