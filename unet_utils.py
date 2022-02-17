@@ -1,4 +1,3 @@
-import gc
 import pickle
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -258,7 +257,7 @@ def simpleSGD(datasetpath, epochs, name):
     history = History()
 
     callbacks = [
-        EarlyStopping(patience=15, monitor='val_loss', mode=min),
+        EarlyStopping(patience=10, monitor='val_loss', mode=min),
         TensorBoard(log_dir='logs'),
         history,
         checkpointer,
@@ -267,8 +266,8 @@ def simpleSGD(datasetpath, epochs, name):
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
-    lr = lr_scheduler.TanhDecayScheduler()
-    # lr = 5e-5
+    # lr = lr_scheduler.TanhDecayScheduler()
+    lr = 5e-5
 
     model = get_model()
 
@@ -332,7 +331,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, patience = 15):
+def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, patience = 10):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data

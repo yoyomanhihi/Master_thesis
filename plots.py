@@ -11,7 +11,7 @@ def history(history, name):
     plt.title("Dice's coefficient by epoch")
     plt.ylabel("Dice's coefficient")
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='lower right')
+    plt.legend(['train', 'validation'], loc='lower right')
     plt.savefig(plot_name)
     plt.show()
 

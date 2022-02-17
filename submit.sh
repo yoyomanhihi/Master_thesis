@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #SBATCH --job-name=name
-#SBATCH --output="fedAvg.txt"
+#SBATCH --output= ".txt"
 #
 #SBATCH -w, --nodelist=mb-cas001
 #SBATCH --ntasks=1
