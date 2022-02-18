@@ -66,7 +66,7 @@ def dice_coef_loss(y_true, y_pred):
 
 def get_average_number_of_true_pixels(datasetpath):
     true_pixels = 0
-    masks_path = datasetpath + '/validation/masks'
+    masks_path = datasetpath + '/test/masks'
     for mask_file in os.listdir(masks_path):
         mask_path = masks_path + '/' + mask_file
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
@@ -142,9 +142,9 @@ def get_model():
 
 
 def test_model(datasetpath, model):
-    validation_generator = dataAugmentation(datasetpath, class_train='validation')
-    len_validation = len(os.listdir(datasetpath + '/validation/images'))
-    test_acc = model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
+    test_generator = dataAugmentation(datasetpath, class_train='test')
+    len_validation = len(os.listdir(datasetpath + '/test/images'))
+    test_acc = model.evaluate_generator(generator=test_generator, steps=len_validation / 1)
     return test_acc
 
 
@@ -157,7 +157,7 @@ def adjustData(img, mask, class_train):
 
     # Random brightness change
     if class_train == 'train': # Check
-        brightness = random.uniform(0.99, 1.01)
+        brightness = random.uniform(0.99, 1.01) # CHECK
         for i in range(len(img)):
             img[i] = img[i] * brightness
 
@@ -182,8 +182,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.06, rotation_range=20)
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.06, rotation_range=20)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10) # CHECK
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
@@ -204,7 +204,7 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
             shuffle=True,
             seed=1)
 
-    elif(class_train == 'validation'):
+    elif class_train == 'validation' or class_train == 'test':
 
         image_datagen = ImageDataGenerator(dtype=tf.uint16)
         mask_datagen = ImageDataGenerator(dtype=tf.uint16)
@@ -264,10 +264,10 @@ def simpleSGD(datasetpath, epochs, name):
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss
+    loss_metric = dice_coef_loss # CHECK
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     # lr = lr_scheduler.TanhDecayScheduler()
-    lr = 5e-5
+    lr = 5e-5 # CHECK
 
     model = get_model()
 
@@ -284,8 +284,6 @@ def simpleSGD(datasetpath, epochs, name):
     # Train the model, doing validation at the end of each epoch.
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
     print((hist.history['val_dice_coef']))
-
-    # test_model(x_train, y_train, model)
 
     plots.history(hist, name)
     return model
@@ -447,8 +445,6 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, pa
 
         # test global model and print out metrics after each communications round
         # for (X_test, Y_test) in test_batched:
-
-        # val_acc = test_model(X_test, Y_test, global_model)
 
         mean_val_acc = 0.
 
