@@ -10,7 +10,7 @@ def main():
 
     try:
         # results = med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)
-        results = unet_running.build_and_save(datasetpath='datasets/dataset_heart/', epochs=100, name=name)
+        results = unet_running.build_and_save(datasetpath='datasets/dataset_heart_fedAvg/2', epochs=100, name=name)
         # string = ("accuracy with lr: " + str(results))
 
         # print(string)

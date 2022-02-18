@@ -376,7 +376,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 5, pa
     # initialize global model
     global_model = get_model()
 
-    global_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)  # Check
+    global_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 
 
     # start global training loop
