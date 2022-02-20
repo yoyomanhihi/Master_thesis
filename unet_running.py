@@ -17,8 +17,8 @@ name = sys.argv[1]
 def build_and_save(datasetpath, epochs, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     print(physical_devices)
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-    # tf.config.set_visible_devices([], 'GPU')
+    # tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    tf.config.set_visible_devices([], 'GPU')
 
     utils.simpleSGD(datasetpath=datasetpath, epochs=epochs, name=name)
 
@@ -58,4 +58,4 @@ def load_and_evaluate(datasetpath, model):
 # build_and_save(datasetpath='datasets/dataset_heart_fedAvg/', epochs=100, name=name)
 # build_and_save_fedavg(datasetpath='datasets/dataset_heart_fedAvg', nbclients=3, name=name)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
-load_and_evaluate('datasets/dataset_heart', 'bs3.h5')
+# load_and_evaluate('datasets/dataset_heart', 'bs3.h5')
