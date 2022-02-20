@@ -10,8 +10,8 @@ organ = "heart"
 client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-' + str(client_nbr)
 mask_path = 'NSCLC-Radiomics/manifest-1603198545583/masks_' + str(organ) + "/LUNG1-" + str(client_nbr) + "/mask_" + str(img_nbr) + ".png"
 image_path = 'NSCLC-Radiomics/manifest-1603198545583/images' + "/LUNG1-" + str(client_nbr) + "/image_" + str(img_nbr) + ".png"
-datasetpath = 'datasets/dataset_heart/'
-datasetpath_fedAvg = 'datasets/dataset_heart_fedAvg/'
+# datasetpath = 'datasets/dataset_heart/'
+# datasetpath_fedAvg = 'datasets/dataset_heart_fedAvg/'
 name = sys.argv[1]
 
 def build_and_save(datasetpath, epochs, name):
@@ -28,7 +28,7 @@ def build_and_save_fedavg(datasetpath, nbclients, name):
     # print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    utils.fedAvg(datasetpath, 3, name=name, patience=10)
+    utils.fedAvg(datasetpath, nbclients, name=name, patience=10)
 
 
 
@@ -56,6 +56,6 @@ def load_and_evaluate(datasetpath, model):
     print('ponderated dice: ' + str(-ponderated_dice))
 
 # build_and_save(datasetpath='datasets/dataset_heart_fedAvg/', epochs=100, name=name)
-# build_and_save_fedavg(datasetpath='datasets/dataset_heart_fedAvg', nbclients=3, name=name)
+# build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
 # load_and_evaluate('datasets/dataset_heart_fedAvg/0', 'model_0.h5')
