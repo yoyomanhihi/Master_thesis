@@ -17,7 +17,7 @@ name = sys.argv[1]
 def build_and_save(datasetpath, epochs, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     print(physical_devices)
-    # tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
     tf.config.set_visible_devices([], 'GPU')
 
     utils.simpleSGD(datasetpath=datasetpath, epochs=epochs, name=name)
