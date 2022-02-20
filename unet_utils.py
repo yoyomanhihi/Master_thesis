@@ -14,7 +14,6 @@ import cv2
 import random
 import plots
 import imageio
-import lr_scheduler
 
 
 MEAN = 4611.838943481445
@@ -191,7 +190,7 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
             class_mode=None,
             color_mode='grayscale',
             target_size=(512, 512),
-            batch_size=3, # CHECK
+            batch_size=1, # CHECK
             shuffle=True,
             seed=1)
         mask_generator = mask_datagen.flow_from_directory(
@@ -279,7 +278,7 @@ def simpleSGD(datasetpath, epochs, name):
     len_training = len(os.listdir(datasetpath + '/train/images'))
     len_validation = len(os.listdir(datasetpath + '/validation/images'))
 
-    hist = model.fit(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/3, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1) # CHECK
+    hist = model.fit(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1) # CHECK
 
     # Train the model, doing validation at the end of each epoch.
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
