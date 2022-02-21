@@ -142,8 +142,8 @@ def get_model():
 
 def test_model(datasetpath, model):
     test_generator = dataAugmentation(datasetpath, class_train='test')
-    len_validation = len(os.listdir(datasetpath + '/test/images'))
-    test_acc = model.evaluate_generator(generator=test_generator, steps=len_validation / 1)
+    len_test = len(os.listdir(datasetpath + '/test/images'))
+    test_acc = model.evaluate_generator(generator=test_generator, steps=len_test / 1)
     return test_acc
 
 
@@ -156,7 +156,7 @@ def adjustData(img, mask, class_train):
 
     # Random brightness change
     if class_train == 'train':
-        brightness = random.uniform(0.99, 1.01) # tocheck
+        brightness = random.uniform(0.985, 1.015) # tocheck
         for i in range(len(img)):
             img[i] = img[i] * brightness
 
@@ -181,8 +181,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10) # tocheck
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25) # tocheck
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
