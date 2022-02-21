@@ -19,4 +19,5 @@ def main():
     except Exception as e:
         mailSender.sendResults(True, None)
 
-main()
+# main()
+unet_running.build_and_save(datasetpath='datasets/dataset_heart_fedAvg/2', epochs=100, name=name)

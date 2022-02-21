@@ -181,8 +181,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.06, rotation_range=20) # tocheck
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.06, rotation_range=20)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10) # tocheck
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
@@ -467,7 +467,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
             patience_wait = 0
             global_model.save(model_name)
         else:
-            print("Average validation Dice score didn't improve, got a dice score of " + str(val_acc) + " but best is still " + str(best_val_acc) )
+            print("Average validation Dice score didn't improve, got a dice score of " + str(mean_val_acc) + " but best is still " + str(best_val_acc) )
             patience_wait += 1
         print("patience_wait = " + str(patience_wait))
 
