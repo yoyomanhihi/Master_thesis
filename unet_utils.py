@@ -14,7 +14,7 @@ import cv2
 import random
 import plots
 import imageio
-
+import file_utils
 
 MEAN = 4611.838943481445
 STD = 7182.589254997573
@@ -284,7 +284,15 @@ def simpleSGD(datasetpath, epochs, name):
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
     print((hist.history['val_dice_coef']))
 
-    plots.history(hist, name)
+    measures_file = name + "_data.txt"
+
+    train_accs = hist.history['dice_coef']
+    val_accs = hist.history['val_dice_coef']
+
+    file_utils.write_measures(measures_file, train_accs)
+    file_utils.write_measures(measures_file, val_accs)
+
+    plots.history(train_accs, val_accs, name)
     return model
 
 
@@ -328,7 +336,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 10):
+def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 2, patience = 10):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -348,6 +356,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
     best_val_acc = 0.
     val_accs = []
     train_acc = []
+    global_val_accs = []
     patience_wait = 0
 
     clients_weight = get_ratio_of_clients(nbrclients, datasetpath)
@@ -454,12 +463,13 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
             val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/1)
 
             val_acc=val_acc[1] # Dice's coeff
-            print(val_acc)
+
             mean_val_acc+=val_acc
 
             val_accs.append(val_acc)
 
         mean_val_acc = mean_val_acc / nbrclients
+
         # If best acc so far
         if mean_val_acc > best_val_acc:
             print("Average validation Dice score improved: from " + str(best_val_acc) + " to: " + str(mean_val_acc))
@@ -471,6 +481,13 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
             patience_wait += 1
         print("patience_wait = " + str(patience_wait))
 
+        # Stores global_validation_acc
+        global_val_path = "datasets/dataset_heart" # tocheck
+        validation_generator = dataAugmentation(global_val_path, class_train='validation')
+        len_validation = len(os.listdir(global_val_path + '/validation/images'))
+        global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
+        global_acc = global_val_acc[1]
+        global_val_accs.append(global_acc)
 
         if patience_wait >= patience:
             break
@@ -478,10 +495,16 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
         print('Accuracy after {} rounds = {}'.format(comm_round, mean_val_acc))
 
     print("FINAL ACCURACY: " + str(mean_val_acc))
-    print(train_acc.history['dice_coef'])
-    print(val_accs)
 
-    plots.history_fedavg(train_acc.history['dice_coef'], val_accs, len(clients), name)
+    train_accs = train_acc.history['dice_coef']
+
+    measures_file = name + "_data.txt"
+
+    file_utils.write_measures(measures_file, train_accs)
+    file_utils.write_measures(measures_file, val_accs)
+    file_utils.write_measures(measures_file, global_val_accs)
+
+    plots.history_fedavg(train_accs, val_accs, len(clients), name)
 
     return global_model
 

@@ -2,12 +2,12 @@
 import matplotlib.pyplot as plt
 
 
-def history(history, name):
+def history(train_accs, val_accs, name):
 
     plot_name = name + '.png'
 
-    plt.plot(history.history['dice_coef'])
-    plt.plot(history.history['val_dice_coef'])
+    plt.plot(train_accs)
+    plt.plot(val_accs)
     plt.title("Dice's coefficient by epoch")
     plt.ylabel("Dice's coefficient")
     plt.xlabel('epoch')
