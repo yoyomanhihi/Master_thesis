@@ -22,4 +22,3 @@ def write_measures(filepath, data):
         f = open(filepath, "a")
         f.write(str(data[i]) + "\n")
         f.close()
-

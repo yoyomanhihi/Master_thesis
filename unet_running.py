@@ -3,7 +3,7 @@ import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
 import sys
-import file_utils
+import plots
 
 client_nbr = 422
 img_nbr = 56
@@ -87,5 +87,7 @@ def get_individial_dice(datasetpath, model, nbclients=3):
 # build_and_save(datasetpath='datasets/dataset_example', epochs=3, name=name)
 # build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
-# load_and_evaluate('datasets/dataset_heart_fedAvg/1', 'models/ds1_heart_39epochs.h5')
+# load_and_evaluate('datasets/dataset_heart_fedAvg/0', 'ds0_2.h5')
 # get_individial_dice(datasetpath='datasets/dataset_heart_fedAvg', model='models/heart_lr5e-5_medda_21epochs.h5')
+# plots.plot_from_file("ds2_3_data.txt")
+# plots.compare_fedAvg_to_separate_models()
