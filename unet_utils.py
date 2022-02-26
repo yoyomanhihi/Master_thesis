@@ -336,7 +336,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 2, patience = 10):
+def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 10):
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
