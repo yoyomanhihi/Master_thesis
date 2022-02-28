@@ -88,6 +88,6 @@ def get_individial_dice(datasetpath, model, nbclients=3):
 # build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
 # load_and_evaluate('datasets/dataset_heart_fedAvg/2', 'models/ds2_heart_33epochs(2).h5')
-# get_individial_dice(datasetpath='datasets/dataset_heart_fedAvg', model='models/heart_lr5e-5_medda_21epochs.h5')
+# get_individial_dice(datasetpath='datasets/dataset_heart_fedAvg', model='fed.h5')
 # plots.plot_from_file("ds2_3_data.txt")
-# plots.compare_fedAvg_to_separate_models()
+# plots.compare_fedAvg_to_separate_models("data/ds2_heart_33epochs(2).txt", "fed_data.txt", 2, 3, "marchestp")
