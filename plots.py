@@ -47,9 +47,10 @@ def plot_from_file(filepath, name):
 
     lines = file_utils.read_measures(filepath)
     mid = int(len(lines)/2)
+    print("epoch optimal: " + str(mid-10))
     train = lines[:mid]
     val = lines[mid:]
-    history(train, val, name)
+    history(train, val, plot_name)
 
 
 def interpret_fed_path(fed_path, dataset_nbr, nbclients):
