@@ -1,4 +1,6 @@
 import pickle
+
+import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import *
@@ -145,6 +147,66 @@ def test_model(datasetpath, model):
     len_test = len(os.listdir(datasetpath + '/test/images'))
     test_acc = model.evaluate_generator(generator=test_generator, steps=len_test / 1)
     return test_acc
+
+
+def dice_3d(datasetpath, model, i):
+    test_path = datasetpath + '/test'
+    images_path = os.listdir(test_path + '/images')
+    masks_path = os.listdir(test_path + '/masks')
+    image = imageio.imread(test_path + '/images/' + images_path[i])
+    image[0][0] = 0
+    image = image - MEAN
+    image = image / STD
+    mask = cv2.imread(test_path + '/masks/' + masks_path[i], cv2.IMREAD_GRAYSCALE)
+    mask = mask / 255
+    mask[mask > 0.5] = 1
+    mask[mask <= 0.5] = 0
+    image = np.reshape(image, (1, 512, 512, 1))
+    prediction = model.predict(image)
+    prediction[prediction > 0.5] = 1
+    prediction[prediction <= 0.5] = 0
+    side = len(mask[0])
+    prediction = prediction.reshape(512, 512)
+    # plt.imshow(prediction)
+    # plt.show()
+    y_true_f = mask.reshape(side * side)
+    y_pred_f = prediction.reshape(side * side)
+    intersection = sum(y_true_f * y_pred_f)
+    sum_of_true = sum(y_true_f)
+    sum_of_true += sum(y_pred_f)
+    return intersection, sum_of_true
+
+def test_model_3d(datasetpath, model):
+    test_path = datasetpath + '/test'
+    model = tf.keras.models.load_model(model, compile=False)
+    patient_intersection = 0
+    patient_sumtrue = 0
+    last_patient = 0
+    dices = []
+    len_data = len(os.listdir(test_path + '/images'))
+    for i in range(len_data):
+        images_path = os.listdir(test_path + '/images')
+        patient_nbr = int(images_path[i].split('_')[0])
+        if(patient_nbr == last_patient and i < len_data-1):
+            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            patient_intersection += intersection
+            patient_sumtrue += sum_of_true
+        elif i == len_data-1:
+            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            patient_intersection += intersection
+            patient_sumtrue += sum_of_true
+            dice = (2 * patient_intersection + smooth) / (patient_sumtrue + smooth)
+            dices.append(dice)
+        else:
+            dice = (2 * patient_intersection+smooth) / (patient_sumtrue + smooth)
+            dices.append(dice)
+            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            patient_intersection = intersection
+            patient_sumtrue = sum_of_true
+            last_patient = patient_nbr
+
+    print(dices)
+    return np.mean(dices)
 
 
 def adjustData(img, mask, class_train):
@@ -336,7 +398,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 25, patience = 10): # tocheck
+def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 10): # tocheck
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
