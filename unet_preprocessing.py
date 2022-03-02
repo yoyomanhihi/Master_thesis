@@ -49,25 +49,17 @@ def generateDatasetFromOneClient(masks_path, images_path, count, organ, train):
     outputs = []
     for i in range(len(os.listdir(images_path))):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
-        if(os.path.isfile(mask_file)):
-            mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
+        if os.path.isfile(mask_file) or train == 'test':
+            if os.path.isfile(mask_file):
+                mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
+            else:
+                mask = np.zeros((512, 512))
             image_file = images_path + "/image_" + str(i) + ".png"
             image = imageio.imread(image_file)
-            if np.sum(mask) > 0 : #CHECK
-                plt.imsave('datasets/dataset_' + str(organ) + '/' + str(train) + f'/masks/{count}_{i}.png',
-                            mask, cmap='gray')
-                imageio.imwrite('datasets/dataset_' + str(organ) + '/' + str(train) + f'/images/{count}_{i}.png',
-                            image.astype(np.uint16))
-                # print((i, np.sum(mask)))
-                # mask[mask < 40] = 0 # Set out of tumor to 0
-                # mask[mask > 210] = 1 # Set out of tumor to 1
-                # print(np.sum(mask) / (512*512)) # Get zone/background ratio
-                # array_file = arrays_path + "/array_" + str(i) + ".npy"
-                # image = np.load(array_file)
-                # image = image - MEAN
-                # image = image / STD
-                # inputs.append(image)
-                # outputs.append(mask)
+            plt.imsave('datasets/dataset_' + str(organ) + '/' + str(train) + f'/masks/{count}_{i}.png',
+                        mask, cmap='gray')
+            imageio.imwrite('datasets/dataset_' + str(organ) + '/' + str(train) + f'/images/{count}_{i}.png',
+                        image.astype(np.uint16))
     data = list(zip(inputs, outputs))
     return data
 
@@ -104,4 +96,4 @@ def generateAndStore(path, organ, train, initclient, endclient, initialcount):
     generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount)
 
 
-# generateAndStore("manifest-1557326747206", "heart", "test", initclient=53, endclient=60, initialcount=48)
+generateAndStore("manifest-1557326747206", "heart", "test", initclient=53, endclient=60, initialcount=48)
