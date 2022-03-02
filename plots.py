@@ -89,7 +89,7 @@ def compare_fedAvg_to_separate_models(local_path, fed_path, client_nbr, nbclient
     plt.plot(fed_train, color='red')
     plt.plot(fed_val, color='red', linestyle='dotted')
 
-    plt.title("Dice's coefficient by epoch")
+    plt.title("FedAvg vs local training for dataset " + str(client_nbr+1))
     plt.ylabel("Dice's coefficient")
     plt.xlabel('epoch')
     plt.legend(['local train', 'local validation', 'fedAvg train', 'fedAvg validation'], loc='lower right')

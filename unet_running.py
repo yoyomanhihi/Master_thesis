@@ -56,39 +56,25 @@ def load_and_evaluate(datasetpath, model):
     print('ponderated dice: ' + str(-ponderated_dice))
 
 
-def get_individial_dice(datasetpath, model, nbclients=3):
-    model = keras.models.load_model(model, compile=False)
-
-    optimizer = tf.keras.optimizers.Adam
-
-    model.compile(optimizer=optimizer(), metrics = [unet_utils.dice_coef_loss, unet_utils.dice_coef_loss_ponderated])
-
+def get_individial_dice_3d(datasetpath, model, nbclients=3):
     total_dice = 0.
-    total_ponderated = 0.
 
     for i in range(nbclients):
         dataset_client = datasetpath + '/' + str(i)
-        SGD_acc = utils.test_model(dataset_client, model)
+        SGD_acc = utils.test_model_3d(dataset_client, model)
 
-        print('dice score for client ' + str(i) + ': ' + str(-SGD_acc[1]))
-        total_dice -= SGD_acc[1]
-
-        ponderated_dice = SGD_acc[2] / unet_utils.get_average_number_of_true_pixels(dataset_client)
-        print('ponderated dice: ' + str(-ponderated_dice))
-        total_ponderated -= ponderated_dice
+        print('3d dice score for client ' + str(i) + ': ' + str(SGD_acc))
+        total_dice += SGD_acc
 
     mean_dice = total_dice/nbclients
-    print('mean dice: ' + str(mean_dice))
-
-    mean_ponderated = total_ponderated/nbclients
-    print('mean ponderated dice: ' + str(mean_ponderated))
+    print('mean 3d dice: ' + str(mean_dice))
 
 
 # build_and_save(datasetpath='datasets/dataset_example', epochs=3, name=name)
 # build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
 # load_and_segment('models/heart_no_dataaugm_21epochs.h5')
 # load_and_evaluate('datasets/dataset_heart_fedAvg/1', 'ds1_new.h5')
-# get_individial_dice(datasetpath='datasets/dataset_heart_fedAvg', model='fed_ultimate.h5')
+# get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='models/heart_fed_medbigda_27epochs(2).h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
-# plots.compare_fedAvg_to_separate_models("data/ds2_heart_33epochs(2).txt", "fed_data.txt", 2, 3, "marchestp")
+# plots.compare_fedAvg_to_separate_models("data/ds0_heart_20epochs(2).txt", "data/heart_fed_medbigda_27epochs(2).txt", 0, 3, "graph_0")
 # print(unet_utils.test_model_3d('datasets/dataset_heart_fedAvg/0', 'models/heart_fed_medbigda_22epochs.h5'))
