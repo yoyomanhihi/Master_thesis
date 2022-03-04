@@ -3,7 +3,6 @@ import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
 import sys
-import plots
 
 client_nbr = 422
 img_nbr = 56
@@ -77,4 +76,4 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 # get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='models/heart_fed_medbigda_27epochs(2).h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
 # plots.compare_fedAvg_to_separate_models("data/ds0_heart_20epochs(2).txt", "data/heart_fed_medbigda_27epochs(2).txt", 0, 3, "graph_0")
-# print(unet_utils.test_model_3d('datasets/dataset_heart_fedAvg/0', 'models/heart_fed_medbigda_22epochs.h5'))
+# print(unet_utils.test_model_3d('datasets/dataset_heart_fedAvg/1', 'ds1pond.h5'))

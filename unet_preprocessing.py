@@ -43,28 +43,47 @@ def storeDataset(dataset, dir):
         pickle.dump(dataset, output)
 
 
+def get_min_mask_number(masks_path):
+    min_mask_index = 10000
+    for mask in os.listdir(masks_path):
+        mask_number = mask.split('_')[1]
+        mask_number = int(mask_number.split('.')[0])
+        if mask_number < min_mask_index:
+            min_mask_index = mask_number
+    return min_mask_index
 
-def generateDatasetFromOneClient(masks_path, images_path, count, organ, train):
+
+def get_masks_bound(min_mask_index, percentage, nbrmasks, nbrimages):
+    out_of_bounds = int(percentage*nbrmasks)
+    mini = max(0, int(min_mask_index-out_of_bounds))
+    maxi = min(nbrimages, int(min_mask_index+nbrmasks+out_of_bounds))
+    return mini, maxi
+
+
+def generateDatasetFromOneClient(masks_path, images_path, count, organ, train, percentage):
     inputs = []
     outputs = []
-    for i in range(len(os.listdir(images_path))):
+    min_mask_index = get_min_mask_number(masks_path)
+    nbrmasks = len(os.listdir(masks_path))
+    nbrimages = len(os.listdir(images_path))
+    mini, maxi = get_masks_bound(min_mask_index, percentage, nbrmasks, nbrimages)
+    for i in range(mini, maxi):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
-        if os.path.isfile(mask_file) or train == 'test':
-            if os.path.isfile(mask_file):
-                mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-            else:
-                mask = np.zeros((512, 512))
-            image_file = images_path + "/image_" + str(i) + ".png"
-            image = imageio.imread(image_file)
-            plt.imsave('datasets/dataset_' + str(organ) + '/' + str(train) + f'/masks/{count}_{i}.png',
-                        mask, cmap='gray')
-            imageio.imwrite('datasets/dataset_' + str(organ) + '/' + str(train) + f'/images/{count}_{i}.png',
-                        image.astype(np.uint16))
+        image_file = images_path + "/image_" + str(i) + ".png"
+        if os.path.isfile(mask_file):
+            mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
+        else:
+            mask = np.zeros((512, 512))
+        image = imageio.imread(image_file)
+        plt.imsave('datasets/dataset_' + str(organ) + '/' + str(train) + f'/masks/{count}_{i}.png',
+                    mask, cmap='gray')
+        imageio.imwrite('datasets/dataset_' + str(organ) + '/' + str(train) + f'/images/{count}_{i}.png',
+                    image.astype(np.uint16))
     data = list(zip(inputs, outputs))
     return data
 
 
-def generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient, initialcount):
+def generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient, initialcount, percentage):
     images_path = storing_path + "/images"
     masks_path = storing_path + "/masks_" + organ
     dataset = []
@@ -79,12 +98,12 @@ def generateDatasetFromManyClients(storing_path, organ, train, initclient, endcl
         print(masks_path2)
         images_path2 = images_path + "/" + patient
         print(images_path2)
-        dataset.extend(generateDatasetFromOneClient(masks_path2, images_path2, count, organ, train))
+        dataset.extend(generateDatasetFromOneClient(masks_path2, images_path2, count, organ, train, percentage))
         count += 1
     return dataset
 
 
-def generateAndStore(path, organ, train, initclient, endclient, initialcount):
+def generateAndStore(path, organ, train, initclient, endclient, initialcount, percentage):
     ''' Generate a dataset from many clients and store it in the files
         args:
             name: name of the file to save
@@ -93,7 +112,7 @@ def generateAndStore(path, organ, train, initclient, endclient, initialcount):
             evalutation: tuple of the form (count0, count1)
             count0: number of non tumor examples
             count1: number of tumor examples'''
-    generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount)
+    generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount, percentage)
 
 
-# generateAndStore("manifest-1638281314414", "heart", "test", initclient=314, endclient=350, initialcount=13)
+# generateAndStore("manifest-1557326747206", "heart", "validation", initclient=41, endclient=53, initialcount=95, percentage=0.1)

@@ -218,7 +218,7 @@ def adjustData(img, mask, class_train):
 
     # Random brightness change
     if class_train == 'train':
-        brightness = random.uniform(0.99, 1.01) # tocheck
+        brightness = random.uniform(0.985, 1.015) # tocheck
         for i in range(len(img)):
             img[i] = img[i] * brightness
 
@@ -243,8 +243,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10) # tocheck
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25) # tocheck
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
@@ -325,7 +325,7 @@ def simpleSGD(datasetpath, epochs, name):
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss_ponderated # tocheck
+    loss_metric = dice_coef_loss # tocheck
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     # lr = lr_scheduler.TanhDecayScheduler()
     lr = 5e-5 # tocheck
@@ -439,7 +439,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss
+    loss_metric = dice_coef_loss_ponderated
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     lr = 5e-5
 
