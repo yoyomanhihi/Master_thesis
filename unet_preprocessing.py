@@ -115,4 +115,4 @@ def generateAndStore(path, organ, train, initclient, endclient, initialcount, pe
     generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount, percentage)
 
 
-# generateAndStore("manifest-1557326747206", "heart", "validation", initclient=41, endclient=53, initialcount=95, percentage=0.1)
+# generateAndStore("manifest-1557326747206", "heart", "test", initclient=53, endclient=60, initialcount=48, percentage=0.1)

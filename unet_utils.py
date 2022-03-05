@@ -53,6 +53,7 @@ def dice_coef_loss_ponderated(y_true, y_pred):
 
 
 smooth = 1.
+smoother = 5000.
 # Dice Coefficient to work with Tensorflow
 def dice_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -61,8 +62,23 @@ def dice_coef(y_true, y_pred):
     return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
 
+def no_organ_coef(y_pred, smoother):
+    y_pred_f = K.flatten(y_pred)
+    error = smoother + K.sum(y_pred_f)
+    return smoother/error
+
+
 def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
+
+
+def dice_coef_loss_custom(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    sum = K.sum(y_true_f)
+    if sum > 0:
+        return -dice_coef(y_true, y_pred)
+    else:
+        return -no_organ_coef(y_pred, smoother)
 
 
 def get_average_number_of_true_pixels(datasetpath):
@@ -183,11 +199,18 @@ def test_model_3d(datasetpath, model):
     patient_sumtrue = 0
     last_patient = 0
     dices = []
+    beginning = True
     len_data = len(os.listdir(test_path + '/images'))
     for i in range(len_data):
         images_path = os.listdir(test_path + '/images')
         patient_nbr = int(images_path[i].split('_')[0])
-        if(patient_nbr == last_patient and i < len_data-1):
+        if beginning:
+            beginning = False
+            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            patient_intersection = intersection
+            patient_sumtrue = sum_of_true
+            last_patient = patient_nbr
+        elif (patient_nbr == last_patient and i < len_data-1):
             intersection, sum_of_true = dice_3d(datasetpath, model, i)
             patient_intersection += intersection
             patient_sumtrue += sum_of_true
@@ -325,7 +348,7 @@ def simpleSGD(datasetpath, epochs, name):
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss # tocheck
+    loss_metric = dice_coef_loss_custom # tocheck
     metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
     # lr = lr_scheduler.TanhDecayScheduler()
     lr = 5e-5 # tocheck
