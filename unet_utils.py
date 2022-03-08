@@ -347,7 +347,7 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     history = History()
 
     callbacks = [
-        EarlyStopping(patience=3, monitor='val_loss', mode=min), #tocheck
+        EarlyStopping(patience=5, monitor='val_loss', mode=min), #tocheck
         TensorBoard(log_dir='logs'),
         history,
         checkpointer,
@@ -355,16 +355,12 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
 
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss # tocheck
-    metrics = [dice_coef, 'accuracy']
+    metrics = [dice_coef]
     # lr = lr_scheduler.TanhDecayScheduler()
     lr = 5e-5 # tocheck
 
-    # model_old = tf.keras.models.load_model('models/ds0_heart_30epochs.h5', custom_objects=dice_coef_loss)
     model = get_model()
-
     model.load_weights(preloaded)
-
-    # model.set_weights(model_old.get_weigths())
 
     model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 
@@ -474,7 +470,7 @@ def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_ro
 
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss_ponderated
-    metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
+    metrics = [dice_coef]
     lr = 5e-5
 
     # initialize global model
