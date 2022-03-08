@@ -21,4 +21,4 @@ def main():
 
 # main()
 # unet_running.build_and_save_fedavg(datasetpath='datasets/dataset_heart_fedAvg', nbclients=3, name=name)
-unet_running.build_and_save(datasetpath='datasets/dataset_heart_fedAvg/1', epochs=100, name=name, preloaded = 'models/ds1_heart_39epochs.h5')
+unet_running.build_and_save(datasetpath='datasets/dataset_heart_fedAvg/1', epochs=100, name=name, preloaded = 'models/ds1_heart_16epochs(2).h5')
