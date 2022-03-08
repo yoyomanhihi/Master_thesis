@@ -38,7 +38,7 @@ def get_mean_std(images_path):
         print('std: ' + str(std))
     return np.mean(means), np.mean(std)
 
-smooth = 5000.
+smooth = 5000. #tocheck
 # Dice Coefficient to work with Tensorflow
 def dice_coef_ponderated(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -58,6 +58,13 @@ def dice_coef(y_true, y_pred):
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
     return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+
+
+def dice_coef_small_smooth(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return (2. * intersection + 1.) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.)
 
 
 def no_organ_coef(y_pred, smoother):
@@ -190,6 +197,7 @@ def dice_3d(datasetpath, model, i):
     sum_of_true += sum(y_pred_f)
     return intersection, sum_of_true
 
+
 def test_model_3d(datasetpath, model):
     test_path = datasetpath + '/test'
     model = tf.keras.models.load_model(model, compile=False)
@@ -319,7 +327,7 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
     return train_generator
 
 
-def simpleSGD(datasetpath, epochs, name):
+def simpleSGD(datasetpath, preloaded, epochs, name):
     ''' Simple SGD algorithm for 32x32 images
         args:
             x_train: training images
@@ -346,14 +354,16 @@ def simpleSGD(datasetpath, epochs, name):
     ]
 
     optimizer = tf.keras.optimizers.Adam
-    loss_metric = dice_coef_loss_custom # tocheck
-    metrics = [dice_coef, dice_coef_ponderated, 'accuracy']
+    loss_metric = dice_coef_loss # tocheck
+    metrics = [dice_coef, 'accuracy']
     # lr = lr_scheduler.TanhDecayScheduler()
     lr = 5e-5 # tocheck
 
     # model_old = tf.keras.models.load_model('models/ds0_heart_30epochs.h5', custom_objects=dice_coef_loss)
     model = get_model()
-    model.load_weights('models/ds2_heart_22epochs.h5') # tocheck
+
+    model.load_weights(preloaded)
+
     # model.set_weights(model_old.get_weigths())
 
     model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
@@ -422,7 +432,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 10): # tocheck
+def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 10): # tocheck
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -469,6 +479,7 @@ def fedAvg(datasetpath, nbrclients, name, frac = 1, epo = 1, comms_round = 100, 
 
     # initialize global model
     global_model = get_model()
+    global_model.load_weights(preloaded)
 
     global_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 

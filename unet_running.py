@@ -14,21 +14,21 @@ image_path = 'NSCLC-Radiomics/manifest-1603198545583/images' + "/LUNG1-" + str(c
 # datasetpath_fedAvg = 'datasets/dataset_heart_fedAvg/'
 name = sys.argv[1]
 
-def build_and_save(datasetpath, epochs, name):
+def build_and_save(datasetpath, preloaded, epochs, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # tf.config.set_visible_devices([], 'GPU')
 
-    utils.simpleSGD(datasetpath=datasetpath, epochs=epochs, name=name)
+    utils.simpleSGD(datasetpath=datasetpath, preloaded=preloaded, epochs=epochs, name=name)
 
 
-def build_and_save_fedavg(datasetpath, nbclients, name):
+def build_and_save_fedavg(datasetpath, preloaded, nbclients, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     # print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    utils.fedAvg(datasetpath, nbclients, name=name, patience=10)
+    utils.fedAvg(datasetpath, preloaded, nbclients, name=name, patience=10)
 
 
 
