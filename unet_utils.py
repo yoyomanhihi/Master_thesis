@@ -38,8 +38,7 @@ def get_mean_std(images_path):
         print('std: ' + str(std))
     return np.mean(means), np.mean(std)
 
-
-smooth = 1.
+smooth = 5000.
 # Dice Coefficient to work with Tensorflow
 def dice_coef_ponderated(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -52,7 +51,6 @@ def dice_coef_loss_ponderated(y_true, y_pred):
     return -dice_coef_ponderated(y_true, y_pred)
 
 
-smooth = 1.
 smoother = 5000.
 # Dice Coefficient to work with Tensorflow
 def dice_coef(y_true, y_pred):
@@ -95,7 +93,7 @@ def get_average_number_of_true_pixels(datasetpath):
 
 
 # Dice Coefficient to work outside Tensorflow
-def dice_coef_2(y_true, y_pred):
+def dice_coef_2(y_true, y_pred, smooth):
     side = len(y_true[0])
     y_true_f = y_true.reshape(side*side)
     y_pred_f = y_pred.reshape(side*side)
@@ -218,10 +216,10 @@ def test_model_3d(datasetpath, model):
             intersection, sum_of_true = dice_3d(datasetpath, model, i)
             patient_intersection += intersection
             patient_sumtrue += sum_of_true
-            dice = (2 * patient_intersection + smooth) / (patient_sumtrue + smooth)
+            dice = (2 * patient_intersection) / (patient_sumtrue)
             dices.append(dice)
         else:
-            dice = (2 * patient_intersection+smooth) / (patient_sumtrue + smooth)
+            dice = (2 * patient_intersection) / (patient_sumtrue)
             dices.append(dice)
             intersection, sum_of_true = dice_3d(datasetpath, model, i)
             patient_intersection = intersection
@@ -241,7 +239,7 @@ def adjustData(img, mask, class_train):
 
     # Random brightness change
     if class_train == 'train':
-        brightness = random.uniform(0.985, 1.015) # tocheck
+        brightness = random.uniform(0.99, 1.01) # tocheck
         for i in range(len(img)):
             img[i] = img[i] * brightness
 
@@ -266,8 +264,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25) # tocheck
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10) # tocheck
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
@@ -341,7 +339,7 @@ def simpleSGD(datasetpath, epochs, name):
     history = History()
 
     callbacks = [
-        EarlyStopping(patience=10, monitor='val_loss', mode=min),
+        EarlyStopping(patience=3, monitor='val_loss', mode=min), #tocheck
         TensorBoard(log_dir='logs'),
         history,
         checkpointer,
@@ -353,7 +351,10 @@ def simpleSGD(datasetpath, epochs, name):
     # lr = lr_scheduler.TanhDecayScheduler()
     lr = 5e-5 # tocheck
 
+    # model_old = tf.keras.models.load_model('models/ds0_heart_30epochs.h5', custom_objects=dice_coef_loss)
     model = get_model()
+    model.load_weights('models/ds2_heart_22epochs.h5') # tocheck
+    # model.set_weights(model_old.get_weigths())
 
     model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 

@@ -1,4 +1,4 @@
-import unet_utils
+import unet_segmentation as segmentation
 import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
@@ -37,7 +37,7 @@ def load_and_segment(model_path):
 
     # SGD_acc = utils.test_model(x_test, y_test, model)
 
-    print(utils.segmentation_2d(model, client_path, mask_path, image_path, img_nbr, organ))
+    print(segmentation.segmentation_2d(model, client_path, mask_path, image_path, img_nbr, organ))
 
 
 def load_and_evaluate(datasetpath, model):
@@ -45,13 +45,13 @@ def load_and_evaluate(datasetpath, model):
 
     optimizer = tf.keras.optimizers.Adam
 
-    model.compile(optimizer=optimizer(), metrics = [unet_utils.dice_coef_loss, unet_utils.dice_coef_loss_ponderated])
+    model.compile(optimizer=optimizer(), metrics = [utils.dice_coef_loss, utils.dice_coef_loss_ponderated])
 
     SGD_acc = utils.test_model(datasetpath, model)
 
 
     print('dice score: ' + str(-SGD_acc[1]))
-    ponderated_dice = SGD_acc[2] / unet_utils.get_average_number_of_true_pixels(datasetpath)
+    ponderated_dice = SGD_acc[2] / utils.get_average_number_of_true_pixels(datasetpath)
     print('ponderated dice: ' + str(-ponderated_dice))
 
 
@@ -71,9 +71,9 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 
 # build_and_save(datasetpath='datasets/dataset_example', epochs=3, name=name)
 # build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
-# load_and_segment('models/heart_no_dataaugm_21epochs.h5')
+# load_and_segment('test.h5')
 # load_and_evaluate('datasets/dataset_heart_fedAvg/1', 'ds1_new.h5')
 # get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='models/heart_fed_medbigda_27epochs(2).h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
 # plots.compare_fedAvg_to_separate_models("data/ds0_heart_20epochs(2).txt", "data/heart_fed_medbigda_27epochs(2).txt", 0, 3, "graph_0")
-# print(unet_utils.test_model_3d('datasets/dataset_heart_fedAvg/2', 'custom_loss_ds0.h5'))
+# print(unet_utils.test_model_3d('datasets/dataset_heart_fedAvg/0', 'test.h5'))

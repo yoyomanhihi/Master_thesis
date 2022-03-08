@@ -6,6 +6,7 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 import imageio
+import shutil
 
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 storing_path = "NSCLC-Radiomics/manifest-1603198545583"
@@ -115,4 +116,25 @@ def generateAndStore(path, organ, train, initclient, endclient, initialcount, pe
     generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount, percentage)
 
 
-# generateAndStore("manifest-1557326747206", "heart", "test", initclient=53, endclient=60, initialcount=48, percentage=0.1)
+def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, initclient, endclient):
+    centr = central_path + '/' + train
+    masks_centr = centr + '/masks'
+    images_centr = centr + '/images'
+    fed = federated_path + '/' + str(client_nbr) + '/' + train
+    masks_fed = fed + '/masks'
+    images_fed = fed + '/images'
+    for mask in os.listdir(masks_centr):
+        client = int(mask.split('_')[0])
+        if client >= initclient and client < endclient:
+            src_mask = masks_centr + '/' + mask
+            dst_mask = masks_fed + '/' + mask
+            shutil.copy(src_mask, dst_mask)
+            src_image = images_centr + '/' + mask
+            dst_image = images_fed + '/' + mask
+            shutil.copy(src_image, dst_image)
+
+
+
+# generateAndStore("manifest-1638281314414", "heart", "test", initclient=314, endclient=350, initialcount=13, percentage=0.5)
+
+# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'train', 89, 333)
