@@ -135,7 +135,7 @@ def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, 
 
 
 
-# generateAndStore("manifest-1638281314414", "heart", "test", initclient=314, endclient=350, initialcount=13, percentage=0.5)
+# generateAndStore("manifest-1557326747206", "heart", "test", initclient=53, endclient=60, initialcount=48, percentage=0.5)
 
 
 # Heart preprocessing:
@@ -145,3 +145,6 @@ def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, 
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'validation', 25, 95)
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'train', 333, 374)
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'validation', 95, 107)
+# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 0, 'test', 0, 13)
+# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'test', 13, 48)
+# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'test', 48, 54)
