@@ -76,4 +76,4 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 # get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='fed_50.h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
 # plots.compare_fedAvg_to_separate_models("data/ds0_heart_20epochs(2).txt", "data/heart_fed_medbigda_27epochs(2).txt", 0, 3, "graph_0")
-# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/0', 'ds0_50_2.h5'))
+# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/2', 'ds2_50.h5'))

@@ -20,4 +20,4 @@ def main():
         mailSender.sendResults(True, None)
 
 # main()
-unet_running.build_and_save(datasetpath='datasets/dataset_heart_fedAvg/1', preloaded = 'models/ds1_heart_39epochs.h5', epochs=100, name=name)
+unet_running.build_and_save(datasetpath='datasets/dataset_heart', preloaded = "models/heart_lr5e-5_medda_21epochs.h5", epochs=100, name=name)

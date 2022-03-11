@@ -247,7 +247,7 @@ def adjustData(img, mask, class_train):
 
     # Random brightness change
     if class_train == 'train':
-        brightness = random.uniform(0.99, 1.01) # tocheck
+        brightness = random.uniform(0.985, 1.015) # tocheck
         for i in range(len(img)):
             img[i] = img[i] * brightness
 
@@ -272,8 +272,8 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
 
     if(class_train == 'train'):
 
-        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10) # tocheck
-        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.05, rotation_range=10)
+        image_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25) # tocheck
+        mask_datagen = ImageDataGenerator(dtype=tf.uint16, zoom_range=0.08, rotation_range=25)
 
         image_generator = image_datagen.flow_from_directory(
             train_data_dir + '/' + class_train,
@@ -360,7 +360,9 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     lr = 5e-5 # tocheck
 
     model = get_model()
-    model.load_weights(preloaded)
+
+    if preloaded is not None:
+        model.load_weights(preloaded)
 
     model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 
@@ -370,7 +372,7 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     len_training = len(os.listdir(datasetpath + '/train/images'))
     len_validation = len(os.listdir(datasetpath + '/validation/images'))
 
-    hist = model.fit(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1) # CHECK
+    hist = model.fit(training_generator, validation_data=validation_generator, validation_steps=len_validation/1, steps_per_epoch=len_training/1, epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1) # tocheck len attention
 
     # Train the model, doing validation at the end of each epoch.
     # hist = model.fit(x_train, y_train, validation_data=(x_test, y_test), shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
@@ -475,7 +477,8 @@ def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_ro
 
     # initialize global model
     global_model = get_model()
-    global_model.load_weights(preloaded)
+    if preloaded is not None:
+        global_model.load_weights(preloaded)
 
     global_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 
