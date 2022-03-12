@@ -23,13 +23,20 @@ def build_and_save(datasetpath, preloaded, epochs, name):
     utils.simpleSGD(datasetpath=datasetpath, preloaded=preloaded, epochs=epochs, name=name)
 
 
-def build_and_save_fedavg(datasetpath, preloaded, nbclients, name):
+def build_and_save_fedavg_2(datasetpath, preloaded, nbclients, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     # print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    utils.fedAvg(datasetpath, preloaded, nbclients, name=name, patience=10)
+    utils.fedAvg_2(datasetpath, preloaded, nbclients, name=name, patience=10)
 
+
+def build_and_save_fedavg_original(datasetpath, preloaded, nbclients, name):
+    physical_devices = tf.config.list_physical_devices('GPU')
+    # print(physical_devices)
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+    utils.fedAvg_original(datasetpath, preloaded, nbclients, name=name, patience=10)
 
 
 def load_and_segment(model_path):

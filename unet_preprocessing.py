@@ -135,7 +135,9 @@ def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, 
 
 
 
-# generateAndStore("manifest-1557326747206", "heart", "test", initclient=53, endclient=60, initialcount=48, percentage=0.5)
+# generateAndStore("NSCLC-Radiomics\manifest-1603198545583", "heart", "train", initclient=0, endclient=89, initialcount=0, percentage=0)
+# generateAndStore("manifest-1638281314414", "heart", "train", initclient=0, endclient=244, initialcount=89, percentage=0)
+# generateAndStore("manifest-1557326747206", "heart", "train", initclient=0, endclient=41, initialcount=333, percentage=0)
 
 
 # Heart preprocessing:

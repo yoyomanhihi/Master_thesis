@@ -430,7 +430,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 5): # tocheck
+def fedAvg_2(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 5): # tocheck
     ''' federated averaging algorithm
             args:
                 clients: dictionary of the clients and their data
@@ -493,10 +493,6 @@ def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_ro
 
         # initial list to collect local model weights after scalling
         scaled_local_weight_list = list()
-
-        # # randomize client data - using keys
-        # client_names = list(clients_batched.keys())
-        # random.shuffle(client_names)
 
         clients = list(range(0, nbrclients))
 
@@ -605,6 +601,176 @@ def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_ro
     return global_model
 
 
+def fedAvg_original(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 5): # tocheck
+    ''' federated averaging algorithm
+            args:
+                clients: dictionary of the clients and their data
+                X_test: test set data
+                y_test: test set labels
+                frac: fraction of clients selected at each round
+                bs: local mini-batch size
+                epo: number of local epochs
+                lr: learning rate
+                comms_round: number of global communication round
+            returns:
+                global_acc: the global accuracy after comms_round rounds
+    '''
+
+    model_name = name + '.h5'
+
+    best_val_acc = 0.
+    val_accs = []
+    train_acc = []
+    global_val_accs = []
+    patience_wait = 0
+
+    clients_weight = get_ratio_of_clients(nbrclients, datasetpath)
+
+    print("clients_weight: " + str(clients_weight))
+
+    # process and batch the training data for each client
+    # clients_batched = dict()
+    # for (client_name, data) in clients.items():
+    #     clients_batched[client_name] = batch_data(data, bs = bs)
+
+    # validation_generator = dataAugmentation(datasetpath, class_train='validation')
+
+    history = History()
+
+    callbacks = [
+        history,
+    ]
+
+    optimizer = tf.keras.optimizers.Adam
+    loss_metric = dice_coef_loss
+    metrics = [dice_coef]
+    lr = 5e-5
+
+    # initialize global model
+    global_model = get_model()
+    if preloaded is not None:
+        global_model.load_weights(preloaded)
+
+    global_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
+
+
+    # start global training loop
+    for comm_round in range(comms_round):
+
+        print('comm_round: ' + str(comm_round))
+
+        # get the global model's weights - will serve as the initial weights for all local models
+        global_weights = global_model.get_weights()
+
+        # initial list to collect local model weights after scalling
+        scaled_local_weight_list = list()
+
+        # # randomize client data - using keys
+        # client_names = list(clients_batched.keys())
+        # random.shuffle(client_names)
+
+        clients = list(range(0, nbrclients))
+
+        # random.shuffle(clients)
+        print('clients: ' + str(clients))
+
+        # loop through each client and create new local model
+        nbrclients = int(frac * nbrclients)
+        # for client in client_names[:nbrclients]:
+        for client in clients[:nbrclients]:
+
+            client_path = datasetpath + '/' + str(client)
+
+            local_model = get_model()
+
+            local_model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
+
+            # set local model weight to the weight of the global model
+            local_model.set_weights(global_weights)
+
+            training_generator = dataAugmentation(client_path, class_train='train')
+
+            len_training = len(os.listdir(client_path + '/train/images'))
+
+            train_acc = local_model.fit(training_generator,
+                                       steps_per_epoch=len_training, epochs=epo, shuffle=True,
+                                       callbacks=callbacks, verbose=1)
+
+            # scale the model weights and add to list
+
+            scaling_factor = clients_weight[client]
+
+            scaled_weights = scale_model_weights(local_model.get_weights(), scaling_factor)
+            scaled_local_weight_list.append(scaled_weights)
+
+            # clear session to free memory after each communication round
+            K.clear_session()
+
+        # to get the average over all the local model, we simply take the sum of the scaled weights
+        average_weights = sum_scaled_weights(scaled_local_weight_list)
+
+        # update global model
+        global_model.set_weights(average_weights)
+
+        # process and batch the test se
+        # test_batched = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(len(y_test))
+
+        # test global model and print out metrics after each communications round
+        # for (X_test, Y_test) in test_batched:
+
+        mean_val_acc = 0.
+
+        for client in clients[:nbrclients]:
+            client_path = datasetpath + '/' + str(client)
+            validation_generator = dataAugmentation(client_path, class_train='validation')
+            len_validation = len(os.listdir(client_path + '/validation/images'))
+            val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation/1)
+
+            val_acc=val_acc[1] # Dice's coeff
+
+            mean_val_acc+=val_acc
+
+            val_accs.append(val_acc)
+
+        mean_val_acc = mean_val_acc / nbrclients
+
+        # If best acc so far
+        if mean_val_acc > best_val_acc:
+            print("Average validation Dice score improved: from " + str(best_val_acc) + " to: " + str(mean_val_acc))
+            best_val_acc = mean_val_acc
+            patience_wait = 0
+            global_model.save(model_name)
+        else:
+            print("Average validation Dice score didn't improve, got a dice score of " + str(mean_val_acc) + " but best is still " + str(best_val_acc) )
+            patience_wait += 1
+        print("patience_wait = " + str(patience_wait))
+
+        # Stores global_validation_acc
+        global_val_path = "datasets/dataset_heart" # tocheck
+        validation_generator = dataAugmentation(global_val_path, class_train='validation')
+        len_validation = len(os.listdir(global_val_path + '/validation/images'))
+        global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
+        global_acc = global_val_acc[1]
+        global_val_accs.append(global_acc)
+
+        if patience_wait >= patience:
+            break
+
+        print('Accuracy after {} rounds = {}'.format(comm_round, mean_val_acc))
+
+    print("FINAL ACCURACY: " + str(mean_val_acc))
+
+    train_accs = train_acc.history['dice_coef']
+
+    measures_file = name + "_data.txt"
+
+    file_utils.write_measures(measures_file, train_accs)
+    file_utils.write_measures(measures_file, val_accs)
+    file_utils.write_measures(measures_file, global_val_accs)
+
+    plots.history_fedavg(train_accs, val_accs, len(clients), name)
+
+    return global_model
 
 
 

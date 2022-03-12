@@ -10,7 +10,7 @@ def main():
 
     try:
         # results = med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)
-        results = unet_running.build_and_save_fedavg(datasetpath='datasets/dataset_heart_fedAvg', nbclients=3, name=name)
+        results = unet_running.build_and_save_fedavg_2(datasetpath='datasets/dataset_heart_fedAvg', nbclients=3, name=name)
         # string = ("accuracy with lr: " + str(results))
 
         # print(string)
@@ -20,4 +20,5 @@ def main():
         mailSender.sendResults(True, None)
 
 # main()
-unet_running.build_and_save(datasetpath='datasets/dataset_heart', preloaded = "models/heart_lr5e-5_medda_21epochs.h5", epochs=100, name=name)
+unet_running.build_and_save_fedavg_2(datasetpath='datasets/dataset_heart_fedAvg', preloaded='models/heart_fed_medbigda_22epochs.h5', nbclients=3, name=name)
+# unet_running.build_and_save(datasetpath='datasets/dataset_heart', preloaded = None, epochs=100, name=name)
