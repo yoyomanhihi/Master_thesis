@@ -154,7 +154,7 @@ def prediction_3d(images_path, model, patient_nbr):
 def plot_3d(image, threshold=0.5, color="navy"):
     # Position the scan upright,
     # so the head of the patient would be at the top facing the camera
-    p = image.transpose(1, 0, 2)
+    p = image.transpose(2, 1, 0)
 
     verts, faces, _, _ = measure.marching_cubes(p, threshold)
 

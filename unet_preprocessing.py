@@ -166,4 +166,4 @@ def copyNonEmptyOnly(initial_path, new_path):
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'test', 48, 54)
 
 
-copyNonEmptyOnly('datasets/dataset_heart/train', 'datasets/dataset_heart/trainnew')
+# copyNonEmptyOnly('datasets/dataset_heart/train', 'datasets/dataset_heart/trainnew')
