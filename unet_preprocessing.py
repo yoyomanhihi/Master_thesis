@@ -133,6 +133,20 @@ def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, 
             dst_image = images_fed + '/' + mask
             shutil.copy(src_image, dst_image)
 
+def copyNonEmptyOnly(initial_path, new_path):
+    masks_init = initial_path + '/masks'
+    images_init = initial_path + '/images'
+    masks_new = new_path + '/masks'
+    images_new = new_path + '/images'
+    for mask_ref in os.listdir(masks_init):
+        src_mask = masks_init + '/' + mask_ref
+        mask = cv2.imread(src_mask, cv2.IMREAD_GRAYSCALE)
+        if np.max(mask) > 0:
+            dst_mask = masks_new + '/' + mask_ref
+            shutil.copy(src_mask, dst_mask)
+            src_image = images_init + '/' + mask_ref
+            dst_image = images_new + '/' + mask_ref
+            shutil.copy(src_image, dst_image)
 
 
 # generateAndStore("NSCLC-Radiomics\manifest-1603198545583", "heart", "train", initclient=0, endclient=89, initialcount=0, percentage=0)
@@ -150,3 +164,6 @@ def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, 
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 0, 'test', 0, 13)
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'test', 13, 48)
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'test', 48, 54)
+
+
+copyNonEmptyOnly('datasets/dataset_heart/train', 'datasets/dataset_heart/trainnew')
