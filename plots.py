@@ -1,6 +1,18 @@
 # Visualize training history
+import os
+import numpy as np
 import matplotlib.pyplot as plt
 import file_utils
+from skimage import measure
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import cv2
+import unet_preprocessing
+import unet_segmentation
+import tensorflow as tf
+
+
+MEAN = 4611.838943481445
+STD = 7182.589254997573
 
 
 def history(train_accs, val_accs, name):
@@ -104,4 +116,58 @@ def compare_fedAvg_to_separate_models(local_path, fed_path, client_nbr, nbclient
     plt.legend(['local train', 'local validation', 'fedAvg train', 'fedAvg validation'], loc='lower right')
 
     plt.savefig(plot_name)
+    plt.show()
+
+
+def mask_3d(mask_path, patient_nbr):
+    patient = []
+    listmasks = os.listdir(mask_path)
+    sortedmasks = unet_preprocessing.sorted_alphanumeric(listmasks)
+    for mask in sortedmasks:
+        nbr = int(mask.split('_')[0])
+        if nbr == patient_nbr:
+            path = mask_path + '/' + mask
+            mask_2d = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+            patient.append(mask_2d)
+    patient = np.array(patient)
+    plot_3d(patient)
+
+
+def prediction_3d(images_path, model, patient_nbr):
+    model = tf.keras.models.load_model(model, compile=False)
+    patient = []
+    listimages = os.listdir(images_path)
+    sortedimages = unet_preprocessing.sorted_alphanumeric(listimages)
+    for image in sortedimages:
+        nbr = int(image.split('_')[0])
+        if nbr == patient_nbr:
+            image_path = images_path + '/' + image
+            prediction = unet_segmentation.prediction(image_path, model)
+            patient.append(prediction)
+    patient = np.array(patient)
+    print(np.max(patient))
+    print(np.min(patient))
+    print(np.shape(patient))
+    plot_3d(patient)
+
+
+def plot_3d(image, threshold=0.5, color="navy"):
+    # Position the scan upright,
+    # so the head of the patient would be at the top facing the camera
+    p = image.transpose(1, 0, 2)
+
+    verts, faces, _, _ = measure.marching_cubes(p, threshold)
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Fancy indexing: `verts[faces]` to generate a collection of triangles
+    mesh = Poly3DCollection(verts[faces], alpha=0.2)
+    mesh.set_facecolor(color)
+    ax.add_collection3d(mesh)
+
+    ax.set_xlim(0, p.shape[0])
+    ax.set_ylim(0, p.shape[1])
+    ax.set_zlim(0, p.shape[2])
+
     plt.show()

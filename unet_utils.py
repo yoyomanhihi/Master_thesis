@@ -1,6 +1,5 @@
 import pickle
 
-import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import *
@@ -17,6 +16,7 @@ import random
 import plots
 import imageio
 import file_utils
+import unet_segmentation
 
 MEAN = 4611.838943481445
 STD = 7182.589254997573
@@ -99,6 +99,13 @@ def get_average_number_of_true_pixels(datasetpath):
     return true_pixels / len(os.listdir(masks_path))
 
 
+def jaccard_distance(y_true, y_pred):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+    return (1 - jac) * smooth
+
+
 # Dice Coefficient to work outside Tensorflow
 def dice_coef_2(y_true, y_pred, smooth):
     side = len(y_true[0])
@@ -174,22 +181,15 @@ def dice_3d(datasetpath, model, i):
     test_path = datasetpath + '/test'
     images_path = os.listdir(test_path + '/images')
     masks_path = os.listdir(test_path + '/masks')
-    image = imageio.imread(test_path + '/images/' + images_path[i])
-    image[0][0] = 0
-    image = image - MEAN
-    image = image / STD
+    image_path = test_path + '/images/' + images_path[i]
+    prediction = unet_segmentation.prediction(image_path, model)
+    # plt.imshow(prediction)
+    # plt.show()
     mask = cv2.imread(test_path + '/masks/' + masks_path[i], cv2.IMREAD_GRAYSCALE)
     mask = mask / 255
     mask[mask > 0.5] = 1
     mask[mask <= 0.5] = 0
-    image = np.reshape(image, (1, 512, 512, 1))
-    prediction = model.predict(image)
-    prediction[prediction > 0.5] = 1
-    prediction[prediction <= 0.5] = 0
     side = len(mask[0])
-    prediction = prediction.reshape(512, 512)
-    # plt.imshow(prediction)
-    # plt.show()
     y_true_f = mask.reshape(side * side)
     y_pred_f = prediction.reshape(side * side)
     intersection = sum(y_true_f * y_pred_f)
@@ -281,7 +281,7 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
             class_mode=None,
             color_mode='grayscale',
             target_size=(512, 512),
-            batch_size=1,
+            batch_size=1, #tocheck
             shuffle=True,
             seed=1)
         mask_generator = mask_datagen.flow_from_directory(
@@ -290,7 +290,7 @@ def dataAugmentation(train_data_dir, class_train = 'train'):
             class_mode=None,
             color_mode='grayscale',
             target_size=(512, 512),
-            batch_size=1,
+            batch_size=1, #tocheck
             shuffle=True,
             seed=1)
 
@@ -355,9 +355,9 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
 
     optimizer = tf.keras.optimizers.Adam
     loss_metric = dice_coef_loss # tocheck
-    metrics = [dice_coef]
+    metrics = [dice_coef] #tocheck
     # lr = lr_scheduler.TanhDecayScheduler()
-    lr = 5e-5 # tocheck
+    lr = 5e-5# tocheck
 
     model = get_model()
 

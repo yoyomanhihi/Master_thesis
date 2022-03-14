@@ -1,3 +1,4 @@
+import plots
 import unet_segmentation as segmentation
 import unet_utils as utils
 import tensorflow as tf
@@ -80,7 +81,10 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 # build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
 # load_and_segment('test.h5')
 # load_and_evaluate('datasets/dataset_heart_fedAvg/1', 'ds1_new.h5')
-# get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='fed_or.h5')
+# get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='gl_medbig_2.h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
 # plots.compare_fedAvg_to_separate_models("data/ds0_heart_20epochs(2).txt", "data/heart_fed_medbigda_27epochs(2).txt", 0, 3, "graph_0")
-# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/1', 'ds1_50_medbig.h5'))
+# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/0', 'ds1_medbig_2.h5'))
+# plots.mask_3d('datasets/dataset_heart/test/masks', 1)
+# plots.prediction_3d('datasets/dataset_heart/test/images', 'models/heart_fed_medbigda_27epochs(2).h5', 1)
+# plots.prediction_3d('datasets/dataset_heart/test/images', 'fed_50.h5', 1)

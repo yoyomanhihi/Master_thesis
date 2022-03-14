@@ -10,6 +10,20 @@ import unet_utils
 MEAN = 4611.838943481445
 STD = 7182.589254997573
 
+
+def prediction(image_path, model):
+    image = imageio.imread(image_path)
+    image[0][0] = 0
+    image = image - MEAN
+    image = image / STD
+    image = np.reshape(image, (1, 512, 512, 1))
+    prediction = model.predict(image)
+    prediction[prediction > 0.5] = 1
+    prediction[prediction <= 0.5] = 0
+    prediction = prediction.reshape(512, 512)
+    return prediction
+
+
 def show_rtstruct(organ, dcm_path, img_nbr):
     if organ == "tumor":
         # plot the rt struct of the image
