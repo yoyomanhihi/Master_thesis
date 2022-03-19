@@ -90,36 +90,52 @@ def interpret_fed_path(fed_path, dataset_nbr, nbclients):
 
 
 
-def compare_fedAvg_to_separate_models(local_path, fed_path, client_nbr, nbclients, name):
+def compare_fedAvg_to_separate_models(local_path, glob_path, fedor_path, fedeq_path, client_nbr, nbclients, name, smooth, step):
     plot_name = name + '.png'
 
+    # local model
     local_lines = file_utils.read_measures(local_path)
     local_mid = int(len(local_lines) / 2)
     local_train = local_lines[:local_mid]
     local_val = local_lines[local_mid:]
-
     x_axis1 = range(1, len(local_train) + 1)
-
     plt.plot(x_axis1, local_train, color='blue')
-    plt.plot(x_axis1, local_val, color='blue', linestyle='dotted')
+    plt.plot(x_axis1, local_val, color='blue', linestyle='dotted', label='_nolegend_')
 
-    fed_train, fed_val = interpret_fed_path(fed_path, client_nbr, nbclients)
+    # global model
+    local_lines = file_utils.read_measures(glob_path)
+    local_mid = int(len(local_lines) / 2)
+    local_train = local_lines[:local_mid]
+    local_val = local_lines[local_mid:]
+    x_axis1 = range(1, len(local_train) + 1)
+    plt.plot(x_axis1, local_train, color='orange')
+    plt.plot(x_axis1, local_val, color='orange', linestyle='dotted', label='_nolegend_')
 
+    # fedor
+    fed_train, fed_val = interpret_fed_path(fedor_path, client_nbr, nbclients)
     x_axis2 = range(1, len(fed_train) + 1)
-
     plt.plot(x_axis2, fed_train, color='red')
-    plt.plot(x_axis2, fed_val, color='red', linestyle='dotted')
+    plt.plot(x_axis2, fed_val, color='red', linestyle='dotted', label='_nolegend_')
 
-    plt.title("FedAvg vs local training for dataset " + str(client_nbr+1))
-    plt.ylabel("Dice's coefficient")
+    # fedeq
+    fedeq_train, fedeq_val = interpret_fed_path(fedeq_path, client_nbr, nbclients)
+    x_axis3 = range(1, len(fedeq_train) + 1)
+    plt.plot(x_axis3, fedeq_train, color='green')
+    plt.plot(x_axis3, fedeq_val, color='green', linestyle='dotted', label='_nolegend_')
+
+
+    plt.title("Strategies training details of step " + str(step) +  " for dataset " + str(client_nbr+1))
+    plt.ylabel("Dice's coefficient, smooth = " + str(smooth))
     plt.xlabel('epoch')
-    plt.legend(['local train', 'local validation', 'fedAvg train', 'fedAvg validation'], loc='lower right')
+    # plt.legend(['local train', 'local validation', 'global train', 'global validation', 'original fedAvg train', 'original fedAvg validation', 'equal-chances fedAvg train', 'equal-chances fedAvg validation'], loc='lower right')
+    plt.legend(['local model', 'global model', 'original fedAvg', 'equal-chances fedAvg'],
+               loc='lower right')
 
     plt.savefig(plot_name)
     plt.show()
 
 
-def mask_3d(mask_path, patient_nbr):
+def mask_3d(mask_path, patient_nbr, title):
     patient = []
     listmasks = os.listdir(mask_path)
     sortedmasks = unet_preprocessing.sorted_alphanumeric(listmasks)
@@ -130,10 +146,10 @@ def mask_3d(mask_path, patient_nbr):
             mask_2d = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             patient.append(mask_2d)
     patient = np.array(patient)
-    plot_3d(patient)
+    plot_3d(patient, title)
 
 
-def prediction_3d(images_path, model, patient_nbr):
+def prediction_3d(images_path, model, patient_nbr, title):
     model = tf.keras.models.load_model(model, compile=False)
     patient = []
     listimages = os.listdir(images_path)
@@ -148,10 +164,10 @@ def prediction_3d(images_path, model, patient_nbr):
     print(np.max(patient))
     print(np.min(patient))
     print(np.shape(patient))
-    plot_3d(patient)
+    plot_3d(patient, title)
 
 
-def plot_3d(image, threshold=0.5, color="navy"):
+def plot_3d(image, title, threshold=0.5, color="navy"):
     # Position the scan upright,
     # so the head of the patient would be at the top facing the camera
     p = image.transpose(2, 1, 0)
@@ -170,4 +186,8 @@ def plot_3d(image, threshold=0.5, color="navy"):
     ax.set_ylim(0, p.shape[1])
     ax.set_zlim(0, p.shape[2])
 
+    plt.title(title, fontsize=25)
     plt.show()
+
+# compare_fedAvg_to_separate_models('data/ds1_heart_16epochs(2).txt', 'glo_final_0_data.txt', 'fedor_final_0_data.txt', 'data/heart_fed_medbigda_27epochs(2).txt', 1, 3, 'on_verra', 1, 1)
+# compare_fedAvg_to_separate_models('ds1_50_medbig_data.txt', 'glo_final_1_data.txt', 'fed_or_data.txt', 'fed_50_data.txt', 1, 3, 'on_verra', 5000, 2)

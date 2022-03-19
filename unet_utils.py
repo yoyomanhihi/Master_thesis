@@ -1,5 +1,6 @@
 import pickle
 
+import unet_preprocessing
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import *
@@ -177,15 +178,15 @@ def test_model(datasetpath, model):
     return test_acc
 
 
-def dice_3d(datasetpath, model, i):
+def count_prediction(datasetpath, model, i):
     test_path = datasetpath + '/test'
     images_path = os.listdir(test_path + '/images')
-    masks_path = os.listdir(test_path + '/masks')
-    image_path = test_path + '/images/' + images_path[i]
+    sortedimages = unet_preprocessing.sorted_alphanumeric(images_path)
+    image_path = test_path + '/images/' + sortedimages[i]
     prediction = unet_segmentation.prediction(image_path, model)
     # plt.imshow(prediction)
     # plt.show()
-    mask = cv2.imread(test_path + '/masks/' + masks_path[i], cv2.IMREAD_GRAYSCALE)
+    mask = cv2.imread(test_path + '/masks/' + sortedimages[i], cv2.IMREAD_GRAYSCALE)
     mask = mask / 255
     mask[mask > 0.5] = 1
     mask[mask <= 0.5] = 0
@@ -200,28 +201,30 @@ def dice_3d(datasetpath, model, i):
 
 def test_model_3d(datasetpath, model):
     test_path = datasetpath + '/test'
+    masks_path = test_path + '/masks'
     model = tf.keras.models.load_model(model, compile=False)
     patient_intersection = 0
     patient_sumtrue = 0
     last_patient = 0
     dices = []
     beginning = True
-    len_data = len(os.listdir(test_path + '/images'))
+    listmasks = os.listdir(masks_path)
+    sortedmasks = unet_preprocessing.sorted_alphanumeric(listmasks)
+    len_data = len(listmasks)
     for i in range(len_data):
-        images_path = os.listdir(test_path + '/images')
-        patient_nbr = int(images_path[i].split('_')[0])
+        patient_nbr = int(sortedmasks[i].split('_')[0])
         if beginning:
             beginning = False
-            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            intersection, sum_of_true = count_prediction(datasetpath, model, i)
             patient_intersection = intersection
             patient_sumtrue = sum_of_true
             last_patient = patient_nbr
         elif (patient_nbr == last_patient and i < len_data-1):
-            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            intersection, sum_of_true = count_prediction(datasetpath, model, i)
             patient_intersection += intersection
             patient_sumtrue += sum_of_true
         elif i == len_data-1:
-            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            intersection, sum_of_true = count_prediction(datasetpath, model, i)
             patient_intersection += intersection
             patient_sumtrue += sum_of_true
             dice = (2 * patient_intersection) / (patient_sumtrue)
@@ -229,13 +232,42 @@ def test_model_3d(datasetpath, model):
         else:
             dice = (2 * patient_intersection) / (patient_sumtrue)
             dices.append(dice)
-            intersection, sum_of_true = dice_3d(datasetpath, model, i)
+            intersection, sum_of_true = count_prediction(datasetpath, model, i)
             patient_intersection = intersection
             patient_sumtrue = sum_of_true
             last_patient = patient_nbr
 
     print(dices)
     return np.mean(dices)
+
+
+def dice_3d(datasetpath, model, patient):
+    test_path = datasetpath + '/test'
+    masks_path = test_path + '/masks'
+    model = tf.keras.models.load_model(model, compile=False)
+    patient_intersection = 0.
+    patient_sumtrue = 0.
+    beginning = True
+    listmasks = os.listdir(masks_path)
+    sortedmasks = unet_preprocessing.sorted_alphanumeric(listmasks)
+    len_data = len(listmasks)
+    for i in range(len_data):
+        patient_nbr = int(sortedmasks[i].split('_')[0])
+        if patient_nbr >= patient:
+            if beginning:
+                beginning = False
+                intersection, sum_of_true = count_prediction(datasetpath, model, i)
+                patient_intersection = intersection
+                patient_sumtrue = sum_of_true
+            elif patient_nbr == patient:
+                intersection, sum_of_true = count_prediction(datasetpath, model, i)
+                patient_intersection += intersection
+                patient_sumtrue += sum_of_true
+            else:
+                break
+    dice = (2 * patient_intersection) / (patient_sumtrue)
+    print('dice 3d: ' + str(dice))
+    return dice
 
 
 def adjustData(img, mask, class_train):
@@ -347,7 +379,7 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     history = History()
 
     callbacks = [
-        EarlyStopping(patience=5, monitor='val_loss', mode=min), #tocheck
+        EarlyStopping(patience=10, monitor='val_loss', mode=min), #tocheck
         TensorBoard(log_dir='logs'),
         history,
         checkpointer,

@@ -167,3 +167,9 @@ def copyNonEmptyOnly(initial_path, new_path):
 
 
 # copyNonEmptyOnly('datasets/dataset_heart/train', 'datasets/dataset_heart/trainnew')
+# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/0/train', 'datasets/dataset_heart_fedAvg/0/train0')
+# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/0/validation', 'datasets/dataset_heart_fedAvg/0/validation0')
+# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/1/train', 'datasets/dataset_heart_fedAvg/1/train0')
+# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/1/validation', 'datasets/dataset_heart_fedAvg/1/validation0')
+# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/2/train', 'datasets/dataset_heart_fedAvg/2/train0')
+# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/2/validation', 'datasets/dataset_heart_fedAvg/2/validation0')
