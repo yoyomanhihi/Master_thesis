@@ -5,8 +5,8 @@ import tensorflow as tf
 from tensorflow import keras
 import sys
 
-client_nbr = 422
-img_nbr = 56
+client_nbr = 417
+img_nbr = 65
 organ = "heart"
 client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-' + str(client_nbr)
 mask_path = 'NSCLC-Radiomics/manifest-1603198545583/masks_' + str(organ) + "/LUNG1-" + str(client_nbr) + "/mask_" + str(img_nbr) + ".png"
@@ -79,11 +79,11 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 
 # build_and_save(datasetpath='datasets/dataset_example', epochs=3, name=name)
 # build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
-# load_and_segment('test.h5')
+# load_and_segment("models/heart/final/glo_final_1.h5")
 # load_and_evaluate('datasets/dataset_heart_fedAvg/2', 'ds2_medbig.h5')
 # get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='glo_final_s1.h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
-# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/0', 'glo_final_s1.h5'))
+# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/1', 'ds1_medbig_2.h5'))
 # print(utils.test_model_3d('datasets/dataset_heart_fedAvg/1', 'glo_final_s6.h5'))
 # i = 0
 # plots.mask_3d('datasets/dataset_heart/test/masks', i, "Doctor's heart segmentation on dataset 1")

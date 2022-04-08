@@ -15,8 +15,8 @@ import imageio
 dcm_path = 'manifest-1634338693043/Pancreatic-CT-CBCT-SEG/Pancreas-CT-CB_003/01-15-2012-NA-PANCREAS-79715/2.000000-DI-87802'
 # dcm_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-003/03-21-1995-NA-FDG PET CT Clinical Wh-36710/1.000000-SCOUT-44780'
 # dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
-# contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
-contour_path = "manifest-1557326747206/LCTSC/LCTSC-Test-S1-101/03-03-2004-NA-NA-08186/1.000000-NA-56597/1-1.dcm"
+contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
+# contour_path = "manifest-1557326747206/LCTSC/LCTSC-Test-S1-101/03-03-2004-NA-NA-08186/1.000000-NA-56597/1-1.dcm"
 # contour_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-001/04-30-1994-NA-PETCT Lung Cancer-74760/1.000000-SCOUT-96085/1-1.dcm'
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 storing_path = "NSCLC-Radiomics/manifest-1603198545583"
@@ -28,6 +28,7 @@ storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 
 
 # contour_data = dicom.read_file(contour_path)
+# print(contour_data)
 # print(dcm_contour.get_roi_names(contour_data))
 #
 # dcm = dicom.dcmread(contour_path)
@@ -162,8 +163,15 @@ def coord2pixels(contour_dataset, path):
     for i in range(len(pixel_coords)):
         pixel_coords2.append((pixel_coords[i][1], pixel_coords[i][0]))
 
+    # show image
+    # img = Image.new('L', (512, 512), 0)
+    # ImageDraw.Draw(img).polygon(pixel_coords2, outline=1, fill=0)
+    # mask = np.array(img)
+    # plt.imshow(mask, cmap='gray')
+    # plt.show()
+
     img = Image.new('L', (512, 512), 0)
-    ImageDraw.Draw(img).polygon(pixel_coords2, outline=1, fill=1)
+    ImageDraw.Draw(img).polygon(pixel_coords2, outline=1, fill=0) # CHECK
     mask = np.array(img)
 
     # get contour data for the image
@@ -202,7 +210,20 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     GTV = f.ROIContourSequence[ROIContourSeq]
     # get contour datasets in a list
     contours = [contour for contour in GTV.ContourSequence]
+    print(np.shape(contours))
     img_contour_arrays = [coord2pixels(cdata, path) for cdata in contours]
+
+    # show image 2
+    # allcontours = []
+    # for array in img_contour_arrays:
+    #     if len(allcontours) == 0:
+    #         allcontours = array[3]
+    #         plt.imshow(allcontours, cmap='gray')
+    #     else:
+    #         allcontours += array[3]
+    # plt.imshow(allcontours, cmap='gray')
+    # plt.show()
+
     return img_contour_arrays
 
 
@@ -227,6 +248,23 @@ def get_contour_dict(contour_file, path, index):
             contour_dict[img_id] = [img_arr, contour_arr, mask]
         else:
             contour_dict[img_id].extend([img_arr, contour_arr, mask])
+
+    # show contours
+    keys = list(contour_dict.keys())
+    for i in range(len(keys)):
+        allcontours = contour_dict[list(contour_dict.keys())[i]]
+        toshow = []
+        print(len(allcontours))
+        if len(allcontours) > 3:
+            for j in range(1, len(allcontours), 3):
+                if j == 1:
+                    toshow = allcontours[j]
+                else:
+                    toshow += allcontours[j]
+            # plt.imshow(toshow, cmap='gray')
+            # plt.show()
+            plt.imsave('pics/right/' + str(list(contour_dict.keys())[i]) + '.png', toshow, cmap='gray')
+
 
     return contour_dict
 
@@ -366,7 +404,7 @@ def create_images_files(path, img_format='png'):
     images, contours, masks = get_data(path, index) #Make sure to read the file as the index doesn't matter
 
     patient = path.split('/')[-2]
-    new_path = '/'.join(path.split('/')[:-4]) # ChecK
+    new_path = '/'.join(path.split('/')[:-4]) # Check
     images_dir = new_path + '/images/' + patient
     if os.path.exists(images_dir):
         shutil.rmtree(images_dir)
@@ -388,7 +426,7 @@ def create_images_forall(general_path):
             index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
-    i = 5 # CHECK
+    i = 0 # CHECK
     for folder in patients_folders[i:]:
         print(i)
         newpath = general_path + "/" + folder
@@ -408,7 +446,7 @@ def create_images_forall(general_path):
 
 
 
-def create_mask_files_only(path, index_name, img_format='png'):
+def create_masks_files_only(path, index_name, img_format='png'):
     """
     Create image and corresponding mask files under to folders '/images' and '/masks'
     in the parent directory of path.
@@ -436,19 +474,19 @@ def create_mask_files_only(path, index_name, img_format='png'):
         # Create images and masks folders
         patient = path.split('/')[-2] # CHECK
         new_path = '/'.join(path.split('/')[:-4])
-        masks_dir = new_path + '/masks_heart/' + patient #CHECK
+        masks_dir = new_path + '/masks_Lung_Right/' + patient #CHECK
         if os.path.exists(masks_dir):
             shutil.rmtree(masks_dir)
         os.makedirs(masks_dir)
         for i in range(len(images)):
             mask = Y[i, :, :]
             if np.sum(mask) > 0:
-                print(masks_dir + f'/mask_{i}.{img_format}')
-                plt.imsave(masks_dir + f'/mask_{i}.{img_format}', Y[i, :, :], cmap="gray")
+                print("save path: " + masks_dir + f'/mask_{i}.{img_format}')
+                # plt.imsave(masks_dir + f'/mask_{i}.{img_format}', Y[i, :, :], cmap="gray")
 
 
 
-def create_mask_only_forall(general_path, index_name):
+def create_masks_only_forall(general_path, index_name):
     """ Create images and masks folders for every patient
         args:
             general_path: path to the folder including all patients
@@ -469,13 +507,13 @@ def create_mask_only_forall(general_path, index_name):
                         newpath3 = newpath2 + "/" + f3
                         newfiles3 = os.listdir(newpath3)
                         if len(newfiles3) > 5:
-                            create_mask_files_only(newpath3, index_name, img_format='png')
+                            create_masks_files_only(newpath3, index_name, img_format='png')
                             i+=1
 
 
 def merge_masks_lungs_forall(storing_path):
-    path_left = storing_path + "/masks_lung-left"
-    path_right = storing_path + "/masks_lung-right"
+    path_left = storing_path + "/masks_Lung_Left"
+    path_right = storing_path + "/masks_Lung_Right"
     for i in range(len(os.listdir(path_left))):
         patient = os.listdir(path_left)[i]
         path_client_left = path_left + "/" + patient
@@ -484,14 +522,43 @@ def merge_masks_lungs_forall(storing_path):
         if os.path.exists(dir):
             shutil.rmtree(dir)
         os.makedirs(dir)
-        for j in range(len(os.listdir(path_client_left))):
-            newpath_left = path_client_left + "/mask_" + str(j) + ".png"
-            newpath_right = path_client_right + "/mask_" + str(j) + ".png"
-            mask_left = cv2.imread(newpath_left, cv2.IMREAD_GRAYSCALE)
-            mask_right = cv2.imread(newpath_right, cv2.IMREAD_GRAYSCALE)
-            mask_lungs = mask_left + mask_right
-            plt.imsave(dir + f'/mask_{j}.png', mask_lungs, cmap='gray')
+        # For all masks of the left lung
+        for mask_ref in (os.listdir(path_client_left)):
+            number_ref_1 = mask_ref.split("_")[1]
+            number_ref = int(number_ref_1.split(".")[0])
+            newpath_left = path_client_left + "/" + mask_ref
+            newpath_right = path_client_right + "/" + mask_ref
+            # if there is a corresponding right lung
+            if(os.path.exists(newpath_right)):
+                mask_left = cv2.imread(newpath_left, cv2.IMREAD_GRAYSCALE)
+                mask_right = cv2.imread(newpath_right, cv2.IMREAD_GRAYSCALE)
+                mask_lungs = mask_left + mask_right
+                plt.imsave(dir + f'/mask_{number_ref}.png', mask_lungs, cmap='gray')
+            # else juste save the left part
+            else:
+                mask_left = cv2.imread(newpath_left, cv2.IMREAD_GRAYSCALE)
+                plt.imsave(dir + f'/mask_{number_ref}.png', mask_left, cmap='gray')
+        # for all right lungs
+        for mask_ref in (os.listdir(path_client_right)):
+            number_ref_1 = mask_ref.split("_")[1]
+            number_ref = int(number_ref_1.split(".")[0])
+            newpath_left = path_client_left + "/" + mask_ref
+            newpath_right = path_client_right + "/" + mask_ref
+            # save right lung if left didn't exist
+            if not os.path.exists(newpath_left):
+                mask_right = cv2.imread(newpath_right, cv2.IMREAD_GRAYSCALE)
+                plt.imsave(dir + f'/mask_{number_ref}.png', mask_right, cmap='gray')
 
+
+def merge_contours():
+    left = 'pics/left/'
+    right = 'pics/right/'
+    for file in os.listdir(left):
+        if os.path.exists(right + file):
+            right_cont = cv2.imread(right + file, cv2.IMREAD_GRAYSCALE)
+            left_cont = cv2.imread(left + file, cv2.IMREAD_GRAYSCALE)
+            merge = right_cont + left_cont
+            plt.imsave('pics/merge/' + file + '.png', merge, cmap='gray')
 
 
 # def print_shapes(general_path):
@@ -506,8 +573,11 @@ def merge_masks_lungs_forall(storing_path):
 #             im = cv2.imread(newpath3)
 #             print(im.shape)
 
-# create_mask_only_forall("manifest-1557326747206/LCTSC", 'Heart')
+
+# create_masks_files_only("manifest-1638281314414/Pediatric-CT-SEG/Pediatric-CT-SEG-376/01-03-2008-NA-CT-22033/544.000000-CT-91663" ,"Lung_R")
+# create_masks_only_forall("manifest-1557326747206/LCTSC", 'Lung_R')
 # create_images_forall("manifest-1557326747206/LCTSC")
 # store_array_forall(general_path)
-# merge_masks_lungs_forall(storing_path)
+# merge_masks_lungs_forall("manifest-1557326747206")
+
 

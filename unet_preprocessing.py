@@ -54,20 +54,21 @@ def get_min_mask_number(masks_path):
     return min_mask_index
 
 
-def get_masks_bound(min_mask_index, percentage, nbrmasks, nbrimages):
-    out_of_bounds = int(percentage*nbrmasks)
+def get_masks_bound(min_mask_index, frac, nbrmasks, nbrimages):
+    out_of_bounds = int(frac*nbrmasks)
     mini = max(0, int(min_mask_index-out_of_bounds))
     maxi = min(nbrimages, int(min_mask_index+nbrmasks+out_of_bounds))
+    print(out_of_bounds, mini, maxi)
     return mini, maxi
 
 
-def generateDatasetFromOneClient(masks_path, images_path, count, organ, train, percentage):
+def generateDatasetFromOneClient(masks_path, images_path, count, organ, train, frac):
     inputs = []
     outputs = []
     min_mask_index = get_min_mask_number(masks_path)
     nbrmasks = len(os.listdir(masks_path))
     nbrimages = len(os.listdir(images_path))
-    mini, maxi = get_masks_bound(min_mask_index, percentage, nbrmasks, nbrimages)
+    mini, maxi = get_masks_bound(min_mask_index, frac, nbrmasks, nbrimages)
     for i in range(mini, maxi):
         mask_file = masks_path + "/mask_" + str(i) + ".png"
         image_file = images_path + "/image_" + str(i) + ".png"
@@ -84,7 +85,7 @@ def generateDatasetFromOneClient(masks_path, images_path, count, organ, train, p
     return data
 
 
-def generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient, initialcount, percentage):
+def generateDatasetFromManyClients(storing_path, organ, train, initclient, endclient, initialcount, frac):
     images_path = storing_path + "/images"
     masks_path = storing_path + "/masks_" + organ
     dataset = []
@@ -99,12 +100,12 @@ def generateDatasetFromManyClients(storing_path, organ, train, initclient, endcl
         print(masks_path2)
         images_path2 = images_path + "/" + patient
         print(images_path2)
-        dataset.extend(generateDatasetFromOneClient(masks_path2, images_path2, count, organ, train, percentage))
+        dataset.extend(generateDatasetFromOneClient(masks_path2, images_path2, count, organ, train, frac))
         count += 1
     return dataset
 
 
-def generateAndStore(path, organ, train, initclient, endclient, initialcount, percentage):
+def generateAndStore(path, organ, train, initclient, endclient, initialcount, frac):
     ''' Generate a dataset from many clients and store it in the files
         args:
             name: name of the file to save
@@ -113,7 +114,7 @@ def generateAndStore(path, organ, train, initclient, endclient, initialcount, pe
             evalutation: tuple of the form (count0, count1)
             count0: number of non tumor examples
             count1: number of tumor examples'''
-    generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount, percentage)
+    generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount, frac)
 
 
 def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, initclient, endclient):
@@ -148,10 +149,23 @@ def copyNonEmptyOnly(initial_path, new_path):
             dst_image = images_new + '/' + mask_ref
             shutil.copy(src_image, dst_image)
 
+def copyNonEmptyOnly2(initial_path, new_path):
+    for file1 in os.listdir(initial_path):
+        src_file1 = initial_path + '/' + file1
+        dst_file1 = new_path + '/' + file1
+        if not os.path.exists(dst_file1):
+            os.makedirs(dst_file1)
+        for file2 in os.listdir(src_file1):
+            src_file = src_file1 + '/' + file2
+            mask = cv2.imread(src_file, cv2.IMREAD_GRAYSCALE)
+            if np.max(mask) > 0:
+                dst_file = dst_file1 + '/' + file2
+                shutil.copy(src_file, dst_file)
 
-# generateAndStore("NSCLC-Radiomics\manifest-1603198545583", "heart", "train", initclient=0, endclient=89, initialcount=0, percentage=0)
-# generateAndStore("manifest-1638281314414", "heart", "train", initclient=0, endclient=244, initialcount=89, percentage=0)
-# generateAndStore("manifest-1557326747206", "heart", "train", initclient=0, endclient=41, initialcount=333, percentage=0)
+
+# generateAndStore("NSCLC-Radiomics\manifest-1603198545583", "lung", "test", initclient=281, endclient=311, initialcount=0, frac=0.5)
+# generateAndStore("manifest-1638281314414", "lung", "test", initclient=311, endclient=345, initialcount=30, frac=0.5)
+# generateAndStore("manifest-1557326747206", "lung", "test", initclient=53, endclient=60, initialcount=64, frac=0.5)
 
 
 # Heart preprocessing:
@@ -165,8 +179,9 @@ def copyNonEmptyOnly(initial_path, new_path):
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'test', 13, 48)
 # copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'test', 48, 54)
 
+# copyNonEmptyOnly2("NSCLC-Radiomics/manifest-1603198545583/masks_lung", "NSCLC-Radiomics/manifest-1603198545583/masks_lung0")
 
-# copyNonEmptyOnly('datasets/dataset_heart/train', 'datasets/dataset_heart/trainnew')
+# copyNonEmptyOnly('NSCLC-Radiomics/manifest-1603198545583/masks_lung', 'NSCLC-Radiomics/manifest-1603198545583/masks_lung0')
 # copyNonEmptyOnly('datasets/dataset_heart_fedAvg/0/train', 'datasets/dataset_heart_fedAvg/0/train0')
 # copyNonEmptyOnly('datasets/dataset_heart_fedAvg/0/validation', 'datasets/dataset_heart_fedAvg/0/validation0')
 # copyNonEmptyOnly('datasets/dataset_heart_fedAvg/1/train', 'datasets/dataset_heart_fedAvg/1/train0')

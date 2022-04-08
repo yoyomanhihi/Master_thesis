@@ -606,7 +606,7 @@ def fedAvg_2(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_
         print("patience_wait = " + str(patience_wait))
 
         # Stores global_validation_acc
-        global_val_path = "datasets/dataset_heart" # tocheck
+        global_val_path = "datasets/dataset_lung" # tocheck
         validation_generator = dataAugmentation(global_val_path, class_train='validation')
         len_validation = len(os.listdir(global_val_path + '/validation/images'))
         global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
@@ -778,7 +778,7 @@ def fedAvg_original(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1,
         print("patience_wait = " + str(patience_wait))
 
         # Stores global_validation_acc
-        global_val_path = "datasets/dataset_heart" # tocheck
+        global_val_path = "datasets/dataset_lung" # tocheck
         validation_generator = dataAugmentation(global_val_path, class_train='validation')
         len_validation = len(os.listdir(global_val_path + '/validation/images'))
         global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
