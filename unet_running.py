@@ -83,8 +83,10 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 # load_and_evaluate('datasets/dataset_heart_fedAvg/2', 'ds2_medbig.h5')
 # get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='glo_final_s1.h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
-# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/1', 'ds1_medbig_2.h5'))
-# print(utils.test_model_3d('datasets/dataset_heart_fedAvg/1', 'glo_final_s6.h5'))
+# print(utils.test_model_3d('datasets/dataset_lung0', 'lr5e6.h5'))
+# print(utils.test_model_3d('datasets/dataset_lung', 'lr5e6.h5'))
+
+
 # i = 0
 # plots.mask_3d('datasets/dataset_heart/test/masks', i, "Doctor's heart segmentation on dataset 1")
 # utils.dice_3d('datasets/dataset_heart', 'models/heart_fed_medbigda_27epochs(2).h5', i)

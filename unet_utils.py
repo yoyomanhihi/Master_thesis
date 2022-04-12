@@ -39,7 +39,7 @@ def get_mean_std(images_path):
         print('std: ' + str(std))
     return np.mean(means), np.mean(std)
 
-smooth = 1. #tocheck
+smooth = 1000. #tocheck
 # Dice Coefficient to work with Tensorflow
 def dice_coef_ponderated(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -52,7 +52,7 @@ def dice_coef_loss_ponderated(y_true, y_pred):
     return -dice_coef_ponderated(y_true, y_pred)
 
 
-smoother = 5000.
+# smoother = 5000.
 # Dice Coefficient to work with Tensorflow
 def dice_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -68,23 +68,23 @@ def dice_coef_small_smooth(y_true, y_pred):
     return (2. * intersection + 1.) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.)
 
 
-def no_organ_coef(y_pred, smoother):
-    y_pred_f = K.flatten(y_pred)
-    error = smoother + K.sum(y_pred_f)
-    return smoother/error
+# def no_organ_coef(y_pred, smoother):
+#     y_pred_f = K.flatten(y_pred)
+#     error = smoother + K.sum(y_pred_f)
+#     return smoother/error
 
 
 def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
 
 
-def dice_coef_loss_custom(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    sum = K.sum(y_true_f)
-    if sum > 0:
-        return -dice_coef(y_true, y_pred)
-    else:
-        return -no_organ_coef(y_pred, smoother)
+# def dice_coef_loss_custom(y_true, y_pred):
+#     y_true_f = K.flatten(y_true)
+#     sum = K.sum(y_true_f)
+#     if sum > 0:
+#         return -dice_coef(y_true, y_pred)
+#     else:
+#         return -no_organ_coef(y_pred, smoother)
 
 
 def get_average_number_of_true_pixels(datasetpath):
@@ -389,7 +389,7 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     loss_metric = dice_coef_loss # tocheck
     metrics = [dice_coef] #tocheck
     # lr = lr_scheduler.TanhDecayScheduler()
-    lr = 5e-5# tocheck
+    lr = 2e-5 #tocheck
 
     model = get_model()
 

@@ -182,7 +182,7 @@ def copyNonEmptyOnly2(initial_path, new_path):
 # copyNonEmptyOnly2("NSCLC-Radiomics/manifest-1603198545583/masks_lung", "NSCLC-Radiomics/manifest-1603198545583/masks_lung0")
 
 # copyNonEmptyOnly('NSCLC-Radiomics/manifest-1603198545583/masks_lung', 'NSCLC-Radiomics/manifest-1603198545583/masks_lung0')
-copyNonEmptyOnly('datasets/dataset_lung', 'datasets/dataset_lung0')
+# copyNonEmptyOnly('datasets/dataset_lung/test', 'datasets/dataset_lung0/test')
 # copyNonEmptyOnly('datasets/dataset_heart_fedAvg/0/validation', 'datasets/dataset_heart_fedAvg/0/validation0')
 # copyNonEmptyOnly('datasets/dataset_heart_fedAvg/1/train', 'datasets/dataset_heart_fedAvg/1/train0')
 # copyNonEmptyOnly('datasets/dataset_heart_fedAvg/1/validation', 'datasets/dataset_heart_fedAvg/1/validation0')
