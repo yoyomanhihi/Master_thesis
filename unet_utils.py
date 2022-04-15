@@ -39,7 +39,7 @@ def get_mean_std(images_path):
         print('std: ' + str(std))
     return np.mean(means), np.mean(std)
 
-smooth = 1000. #tocheck
+smooth = 1. #tocheck
 # Dice Coefficient to work with Tensorflow
 def dice_coef_ponderated(y_true, y_pred):
     y_true_f = K.flatten(y_true)
