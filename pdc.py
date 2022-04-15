@@ -2,19 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from skimage import morphology
-
 import pydicom
 import scipy.ndimage
 from skimage import measure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from skimage.morphology import disk, opening, closing
-
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
-
-from os import listdir, mkdir
+from os import listdir
 
 
 def load_scan(path):

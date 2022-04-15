@@ -117,7 +117,7 @@ def generateAndStore(path, organ, train, initclient, endclient, initialcount, fr
     generateDatasetFromManyClients(path, organ, train, initclient, endclient, initialcount, frac)
 
 
-def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, initclient, endclient):
+def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, initclient, endclient, remove=False):
     centr = central_path + '/' + train
     masks_centr = centr + '/masks'
     images_centr = centr + '/images'
@@ -129,10 +129,16 @@ def copyFromCentralToFederated(central_path, federated_path, client_nbr, train, 
         if client >= initclient and client < endclient:
             src_mask = masks_centr + '/' + mask
             dst_mask = masks_fed + '/' + mask
-            shutil.copy(src_mask, dst_mask)
+            if remove:
+                shutil.move(src_mask, dst_mask)
+            else:
+                shutil.copy(src_mask, dst_mask)
             src_image = images_centr + '/' + mask
             dst_image = images_fed + '/' + mask
-            shutil.copy(src_image, dst_image)
+            if remove:
+                shutil.move(src_image, dst_image)
+            else:
+                shutil.copy(src_image, dst_image)
 
 def copyNonEmptyOnly(initial_path, new_path):
     masks_init = initial_path + '/masks'
@@ -163,21 +169,21 @@ def copyNonEmptyOnly2(initial_path, new_path):
                 shutil.copy(src_file, dst_file)
 
 
-# generateAndStore("NSCLC-Radiomics\manifest-1603198545583", "lung", "test", initclient=281, endclient=311, initialcount=0, frac=0.5)
-# generateAndStore("manifest-1638281314414", "lung", "test", initclient=311, endclient=345, initialcount=30, frac=0.5)
-# generateAndStore("manifest-1557326747206", "lung", "test", initclient=53, endclient=60, initialcount=64, frac=0.5)
+# generateAndStore("NSCLC-Radiomics\manifest-1603198545583", "lung", "test", initclient=311, endclient=312, initialcount=30, frac=0.5)
+# generateAndStore("manifest-1638281314414", "lung", "test", initclient=311, endclient=345, initialcount=31, frac=0.5)
+# generateAndStore("manifest-1557326747206", "lung", "test", initclient=53, endclient=60, initialcount=65, frac=0.5)
 
 
 # Heart preprocessing:
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 0, 'train', 0, 89)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 0, 'validation', 0, 25)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'train', 89, 333)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'validation', 25, 95)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'train', 333, 374)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'validation', 95, 107)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 0, 'test', 0, 13)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 1, 'test', 13, 48)
-# copyFromCentralToFederated('datasets/dataset_heart', 'datasets/dataset_heart_fedAvg', 2, 'test', 48, 54)
+copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 0, 'train', 0, 219, remove=True)
+copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 0, 'validation', 0, 62, remove=True)
+copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 1, 'train', 219, 461, remove=True)
+copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 1, 'validation', 62, 131, remove=True)
+copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 2, 'train', 461, 502, remove=True)
+copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 2, 'validation', 131, 143, remove=True)
+# copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 0, 'test', 0, 30)
+# copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 1, 'test', 31, 65)
+# copyFromCentralToFederated('datasets/dataset_lung0', 'datasets/dataset_lung_fedAvg0', 2, 'test', 65, 71)
 
 # copyNonEmptyOnly2("NSCLC-Radiomics/manifest-1603198545583/masks_lung", "NSCLC-Radiomics/manifest-1603198545583/masks_lung0")
 

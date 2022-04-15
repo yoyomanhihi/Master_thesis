@@ -10,17 +10,23 @@ import unet_preprocessing
 import unet_segmentation
 import tensorflow as tf
 
-
+# Mean  intensity and standard deviation of the pixels in the image
 MEAN = 4611.838943481445
 STD = 7182.589254997573
 
-
 def history(train_accs, val_accs, name):
-
+    """ Plot the history of the training and validation accuracy
+    Args:
+        train_accs (list): list of training accuracies
+        val_accs (list): list of validation accuracies
+        name (str): name of the plot
+    """
     plot_name = name + '.png'
 
+    # make the x axis start to 1
     x_axis = range(1, len(train_accs)+1)
 
+    # make the plot
     plt.plot(x_axis, train_accs)
     plt.plot(x_axis, val_accs)
     plt.title("Dice's coefficient by epoch")
@@ -32,40 +38,67 @@ def history(train_accs, val_accs, name):
 
 
 def history_fedavg(train_accs, val_accs, clientsnbr, name):
+    """ Plot the history of the training and validation accuracy
+        for each client, in the federated average case
+    Args:
+        train_accs (list): list of training accuracies
+        val_accs (list): list of validation accuracies
+        clientsnbr (int): number of clients
+        name (str): name of the plot
+    """
 
     plot_name = name + '.png'
     colors = ['blue', 'red', 'green']
 
+    # make the x axis start to 1
     x_axis = range(1, len(train_accs) + 1)
 
+    # plot the train accuracies of the clients
     for i in range(clientsnbr):
         train_accs_client = []
         for j in range(i, len(train_accs), clientsnbr):
             train_accs_client.append(train_accs[j])
         print(train_accs_client)
         plt.plot(x_axis, train_accs_client, color=colors[i])
+
+    # plot the validation accuracies of the clients
     for i in range(clientsnbr):
         val_accs_client = []
         for j in range(i, len(val_accs), clientsnbr):
             val_accs_client.append(val_accs[j])
         print(val_accs_client)
         plt.plot(x_axis, val_accs_client, color=colors[i], linestyle='dotted')
+
+    # make the plot
     plt.title("Dice's coefficient by epoch")
     plt.ylabel("Dice's coefficient")
     plt.xlabel('epoch')
-    plt.legend(['train client 1', 'train client 2', 'train client 3', 'validation client 1', 'validation client 2', 'validation client 3'], loc='lower right')
+    plt.legend(['train client 1', 'train client 2', 'train client 3', 'validation client 1',
+                'validation client 2', 'validation client 3'], loc='lower right')
     plt.savefig(plot_name)
     plt.show()
 
 
 def plot_from_file(filepath, name):
+    """ Plot the history of the training and validation accuracy
+        from the file containing the history
+    Args:
+        filepath (str): path to the file containing the history
+        name (str): name of the plot
+    """
+
     plot_name = name + '.png'
 
+    # read the file
     lines = file_utils.read_measures(filepath)
+
+    # divide the lines in train and validation accuracies
     mid = int(len(lines)/2)
     print("epoch optimal: " + str(mid-10))
     train = lines[:mid]
     val = lines[mid:]
+
+    # make the plot
     history(train, val, plot_name)
 
 
@@ -90,7 +123,23 @@ def interpret_fed_path(fed_path, dataset_nbr, nbclients):
 
 
 
-def compare_fedAvg_to_separate_models(local_path, glob_path, fedor_path, fedeq_path, client_nbr, nbclients, name, smooth, step):
+def compare_fedAvg_to_separate_models(local_path, glob_path, fedor_path, fedeq_path,
+                                      client_nbr, nbclients, name, smooth, step):
+    """ Plot the training and validation accuracy of all strategies
+        from the files containing the history
+    Args:
+        local_path (str): path to the file containing the history of the local strategy
+        glob_path (str): path to the file containing the history of the global strategy
+        fedor_path (str): path to the file containing the history of the original fedAvg strategy
+        fedeq_path (str): path to the file containing the history of the federated equal-chances strategy
+        client_nbr (int): number of the client
+        nbclients (int): total number of clients
+        name (str): name of the plot
+        smooth (int): value of the smooth parameter used
+        step (int): step of the strategy (1 or 2)
+    """
+
+
     plot_name = name + '.png'
 
     # local model
@@ -123,22 +172,31 @@ def compare_fedAvg_to_separate_models(local_path, glob_path, fedor_path, fedeq_p
     plt.plot(x_axis3, fedeq_train, color='green')
     plt.plot(x_axis3, fedeq_val, color='green', linestyle='dotted', label='_nolegend_')
 
-
+    # make the plot
     plt.title("Strategies training details of step " + str(step) +  " for dataset " + str(client_nbr+1))
     plt.ylabel("Dice's coefficient, smooth = " + str(smooth))
     plt.xlabel('epoch')
     # plt.legend(['local train', 'local validation', 'global train', 'global validation', 'original fedAvg train', 'original fedAvg validation', 'equal-chances fedAvg train', 'equal-chances fedAvg validation'], loc='lower right')
     plt.legend(['local model', 'global model', 'original fedAvg', 'equal-chances fedAvg'],
                loc='lower right')
-
     plt.savefig(plot_name)
     plt.show()
 
 
 def mask_3d(mask_path, patient_nbr, title):
+    """ Make the 3d plot of the original mask
+    Args:
+        mask_path (str): path to the file containing the masks
+        patient_nbr (int): number of the patient
+        title (str): title of the plot
+    """
+
     patient = []
     listmasks = os.listdir(mask_path)
+    # sort the masks
     sortedmasks = unet_preprocessing.sorted_alphanumeric(listmasks)
+
+    # create the 3d array of the masks
     for mask in sortedmasks:
         nbr = int(mask.split('_')[0])
         if nbr == patient_nbr:
@@ -146,14 +204,29 @@ def mask_3d(mask_path, patient_nbr, title):
             mask_2d = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             patient.append(mask_2d)
     patient = np.array(patient)
+
+    # make the plot
     plot_3d(patient, title)
 
 
 def prediction_3d(images_path, model, patient_nbr, title):
+    """ Make the 3d plot of the predicted mask
+    Args:
+        images_path (str): path to the file containing the images
+        model (keras model): model used to predict the masks
+        patient_nbr (int): number of the patient
+        title (str): title of the plot
+    """
+
+    # load the model
     model = tf.keras.models.load_model(model, compile=False)
+
     patient = []
     listimages = os.listdir(images_path)
+    # sort the images
     sortedimages = unet_preprocessing.sorted_alphanumeric(listimages)
+
+    # create the 3d array of the predicted masks
     for image in sortedimages:
         nbr = int(image.split('_')[0])
         if nbr == patient_nbr:
@@ -161,13 +234,20 @@ def prediction_3d(images_path, model, patient_nbr, title):
             prediction = unet_segmentation.prediction(image_path, model)
             patient.append(prediction)
     patient = np.array(patient)
-    print(np.max(patient))
-    print(np.min(patient))
-    print(np.shape(patient))
+
+    # make the plot
     plot_3d(patient, title)
 
 
 def plot_3d(image, title, threshold=0.5, color="navy"):
+    """ Make the 3d plot
+    Args:
+        image (numpy array): 3d array of the image to plot
+        title (str): title of the plot
+        threshold (float): threshold to binarize the image
+        color (str): color of the plot
+    """
+
     # Position the scan upright,
     # so the head of the patient would be at the top facing the camera
     p = image.transpose(2, 1, 0)
