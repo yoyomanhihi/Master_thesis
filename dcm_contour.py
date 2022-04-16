@@ -1,3 +1,9 @@
+"""
+This file is largely based on the library "dicom_contour" by KeremTurgutlu
+Many functions were however modified or added to fit the needs of the project.
+https://github.com/KeremTurgutlu/dicom-contour
+"""
+
 from pydicom.errors import InvalidDicomError
 import dicom_contour.contour as dcm_contour
 from scipy.sparse import csc_matrix
@@ -44,9 +50,8 @@ storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 
 
 def plot2dcontour(img_arr, contour_arr, img_nbr, figsize=(20, 20)):
-    """
-    Shows 2d MR img with contour
-    Inputs
+    """ Show 2d MR img with contour
+    Args:
         img_arr: 2d np.array image array with pixel intensities
         contour_arr: 2d np.array contour array with pixels of 1 and 0
     """
@@ -67,12 +72,11 @@ def plot2dcontour(img_arr, contour_arr, img_nbr, figsize=(20, 20)):
 
 
 def get_contour_file(path):
-    """
-    Get contour file from a given path by searching for ROIContourSequence
-    inside dicom data structure.
-    More information on ROIContourSequence available here:
-    http://dicom.nema.org/medical/dicom/2016c/output/chtml/part03/sect_C.8.8.6.html
-    Inputs:
+    """ Get contour file from a given path by searching for ROIContourSequence
+        inside dicom data structure.
+        More information on ROIContourSequence available here:
+        http://dicom.nema.org/medical/dicom/2016c/output/chtml/part03/sect_C.8.8.6.html
+    Args:
             path (str): path of the the directory that has DICOM files in it, e.g. folder of a single patient
     Return:
         contour_file (str): name of the file with the contour
@@ -94,9 +98,11 @@ def get_contour_file(path):
 
 
 def parse_dicom_file(filename):
-    """Parse the given DICOM filename
-    :param filename: filepath to the DICOM file to parse
-    :return: dictionary with DICOM image data
+    """ Parse the given DICOM filename
+    Args:
+        filename: filepath to the DICOM file to parse
+    Return:
+        dictionary with DICOM image data
     """
     try:
         dcm = dicom.read_file(filename)
@@ -124,13 +130,12 @@ def parse_dicom_file(filename):
 
 
 def coord2pixels(contour_dataset, path):
-    """
-    Given a contour dataset (a DICOM class) and path that has .dcm files of
-    corresponding images. This function will return img_arr and contour_arr (2d image and contour pixels)
-    Inputs
+    """ Given a contour dataset (a DICOM class) and path that has .dcm files of
+        corresponding images. This function will return img_arr and contour_arr (2d image and contour pixels)
+    Inputs:
         contour_dataset: DICOM dataset class that is identified as (3006, 0016)  Contour Image Sequence
         path: string that tells the path of all DICOM images
-    Return
+    Return:
         img_arr: 2d np.array of image with pixel intensities
         contour_arr: 2d np.array of contour with 0 and 1 labels
     """
@@ -188,14 +193,13 @@ def coord2pixels(contour_dataset, path):
 
 
 def cfile2pixels(file, path, ROIContourSeq=0):
-    """
-    Given a contour file and path of related images return pixel arrays for contours
-    and their corresponding images.
-    args:
+    """ Given a contour file and path of related images return pixel arrays for contours
+        and their corresponding images.
+    Args:
         file: filename of contour
         path: path that has contour and image files
         ROIContourSeq: tells which sequence of contouring to use default 0
-    return:
+    Return:
         img_contour_arrays: A list which have pairs of img_arr and contour_arr for a given contour file
     """
     # handle `/` missing
@@ -229,12 +233,11 @@ def cfile2pixels(file, path, ROIContourSeq=0):
 
 
 def get_contour_dict(contour_file, path, index):
-    """
-    Returns a dictionary as k: img fname, v: [corresponding img_arr, corresponding contour_arr]
-    Inputs:
+    """ Return a dictionary as k: img fname, v: [corresponding img_arr, corresponding contour_arr]
+    Args:
         contour_file: .dcm contour file name
         path: path which has contour and image files
-    Returns:
+    Return:
         contour_dict: dictionary with 2d np.arrays
     """
     # handle `/` missing
@@ -287,12 +290,11 @@ def get_contour_dict(contour_file, path, index):
 
 
 def slice_order(path):
-    """
-    Takes path of directory that has the DICOM images and returns
-    a ordered list that has ordered filenames
-    Inputs
+    """ Takes path of directory that has the DICOM images and returns
+        a ordered list that has ordered filenames
+    Args:
         path: path that has .dcm images
-    Returns
+    Return:
         ordered_slices: ordered tuples of filename and z-position
     """
     # handle `/` missing
@@ -315,13 +317,12 @@ def slice_order(path):
 # ordered_slices = slice_order(dcm_path)
 
 def get_data(path, index):
-    """
-    Generate image array and contour array
-    Inputs:
+    """ Generate image array and contour array
+    Args:
         path (str): path of the the directory that has DICOM files in it
         contour_dict (dict): dictionary created by get_contour_dict
         index (int): index of the desired ROISequence
-    Returns:
+    Return:
         images and contours np.arrays
     """
     images = []
@@ -373,10 +374,10 @@ def get_data(path, index):
 
 def get_index(dcm_path, index_name):
     """ Return the index number corresponding to the index name, in the ROI sequence of the patient
-        args:
+        Args:
             dcm_path: path to the dcm_files
             index_name: name of the index to find in the ROI sequence of the patient
-        return:
+        Return:
             i: number of the index corresponding to the index name
         """
     contour_path = dcm_path + "/1-1.dcm"
@@ -391,10 +392,9 @@ def get_index(dcm_path, index_name):
 
 
 def create_images_files(path, img_format='png'):
-    """
-    Create image and corresponding mask files under to folders '/images' and '/masks'
-    in the parent directory of path.
-    Inputs:
+    """ Create image and corresponding mask files under to folders '/images' and '/masks'
+        in the parent directory of path.
+    Args:
         path (str): path of the the directory that has DICOM files in it, e.g. folder of a single patient
         index (int): index of the desired ROISequence
         img_format (str): image format to save by, png by default
@@ -421,9 +421,9 @@ def create_images_files(path, img_format='png'):
 
 def create_images_forall(general_path):
     """ Create images and masks folders for every patient
-        args:
-            general_path: path to the folder including all patients
-            index_name: name of the index to be segmented in the masks folder
+    Args:
+        general_path: path to the folder including all patients
+        index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
     i = 0 # CHECK
@@ -447,10 +447,9 @@ def create_images_forall(general_path):
 
 
 def create_masks_files_only(path, index_name, img_format='png'):
-    """
-    Create image and corresponding mask files under to folders '/images' and '/masks'
-    in the parent directory of path.
-    Inputs:
+    """ Create image and corresponding mask files under to folders '/images' and '/masks'
+        in the parent directory of path.
+    Args:
         path (str): path of the the directory that has DICOM files in it, e.g. folder of a single patient
         index (int): index of the desired ROISequence
         img_format (str): image format to save by, png by default
@@ -487,10 +486,11 @@ def create_masks_files_only(path, index_name, img_format='png'):
 
 
 def create_masks_only_forall(general_path, index_name):
-    """ Create images and masks folders for every patient
-        args:
-            general_path: path to the folder including all patients
-            index_name: name of the index to be segmented in the masks folder
+    """
+    Create images and masks folders for every patient
+    Args:
+        general_path: path to the folder including all patients
+        index_name: name of the index to be segmented in the masks folder
     """
     patients_folders = os.listdir(general_path)
     i = 0  # CHECK
@@ -511,9 +511,47 @@ def create_masks_only_forall(general_path, index_name):
                             i+=1
 
 
+# Pre:
+'''
+storing_path   
+│
+└───masks_Lung_Right
+│   │
+│   └───patient1
+│   │    │   image1.png
+│   │    │   image2.png
+│   │    │   ...
+│   │    
+│   └───patient2
+│   │    │   image1.png
+│   │    │   image2.png
+│   │    │   ...
+│   │    
+└───masks_Lung_Left
+    │
+    └───patient1
+    │    │   image1.png
+    │    │   image2.png
+    │    │   ...
+    │    
+    └───patient2
+         │   image1.png
+         │   image2.png
+         │   ...
+'''
 def merge_masks_lungs_forall(storing_path):
+    """ Merge masks_Lung_Right and masks_Lung_Left folders into
+        masks_Lungs folder.
+        All images of the same patient with the same name are
+        merged into one image with the two lungs.
+    Args:
+        storing_path (str): path to the folder described in Pre
+    """
+
     path_left = storing_path + "/masks_Lung_Left"
     path_right = storing_path + "/masks_Lung_Right"
+
+    # for all patients
     for i in range(len(os.listdir(path_left))):
         patient = os.listdir(path_left)[i]
         path_client_left = path_left + "/" + patient
@@ -522,13 +560,13 @@ def merge_masks_lungs_forall(storing_path):
         if os.path.exists(dir):
             shutil.rmtree(dir)
         os.makedirs(dir)
-        # For all masks of the left lung
+        # for all masks of the left lung
         for mask_ref in (os.listdir(path_client_left)):
             number_ref_1 = mask_ref.split("_")[1]
             number_ref = int(number_ref_1.split(".")[0])
             newpath_left = path_client_left + "/" + mask_ref
             newpath_right = path_client_right + "/" + mask_ref
-            # if there is a corresponding right lung
+            # if there is a corresponding right lung, merge them
             if(os.path.exists(newpath_right)):
                 mask_left = cv2.imread(newpath_left, cv2.IMREAD_GRAYSCALE)
                 mask_right = cv2.imread(newpath_right, cv2.IMREAD_GRAYSCALE)
@@ -551,6 +589,10 @@ def merge_masks_lungs_forall(storing_path):
 
 
 def merge_contours():
+    """ Merge contours of the same patient into one image.
+        Useful for the report.
+    """
+    pass
     left = 'pics/left/'
     right = 'pics/right/'
     for file in os.listdir(left):

@@ -20,5 +20,5 @@ def main():
         mailSender.sendResults(True, None)
 
 # main()
-unet_running.build_and_save_fedavg_original(datasetpath='datasets/dataset_heart_fedAvg', preloaded=None, nbclients=3, name=name)
+unet_running.build_and_save_fedavg_original(datasetpath='datasets/dataset_lung_fedAvg0', preloaded=None, nbclients=3, name=name)
 # unet_running.build_and_save(datasetpath='datasets/dataset_heart_fedAvg/1', epochs=100, name=name, preloaded = None)

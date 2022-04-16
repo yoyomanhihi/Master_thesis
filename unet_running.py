@@ -85,7 +85,7 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
 # print('0: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/0', 'sm2000.h5')))
 # print('1: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/1', 'sm2000.h5')))
-# print('2: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/2', 'sm2000.h5')))
+# print('2: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/2', 'ds2_1.h5')))
 # print('3000: ' + str(utils.test_model_3d('datasets/dataset_lung50', 'sm3000.h5')))
 # print('2000: ' + str(utils.test_model_3d('datasets/dataset_lung50', 'sm2000.h5')))
 # print('1: ' + str(utils.test_model_3d('datasets/dataset_lung0', 'lr2e5.h5')))
