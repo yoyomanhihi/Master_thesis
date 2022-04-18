@@ -1,5 +1,4 @@
 import pickle
-
 import unet_preprocessing
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -39,7 +38,7 @@ def get_mean_std(images_path):
         print('std: ' + str(std))
     return np.mean(means), np.mean(std)
 
-smooth = 1. #tocheck
+smooth = 2000. #tocheck
 # Dice Coefficient to work with Tensorflow
 def dice_coef_ponderated(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -379,7 +378,7 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     history = History()
 
     callbacks = [
-        EarlyStopping(patience=10, monitor='val_loss', mode=min), #tocheck
+        EarlyStopping(patience=5, monitor='val_loss', mode=min), #tocheck
         TensorBoard(log_dir='logs'),
         history,
         checkpointer,
@@ -606,12 +605,12 @@ def fedAvg_2(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_
         print("patience_wait = " + str(patience_wait))
 
         # Stores global_validation_acc
-        global_val_path = "datasets/dataset_lung" # tocheck
-        validation_generator = dataAugmentation(global_val_path, class_train='validation')
-        len_validation = len(os.listdir(global_val_path + '/validation/images'))
-        global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
-        global_acc = global_val_acc[1]
-        global_val_accs.append(global_acc)
+        # global_val_path = "datasets/dataset_lung" # tocheck
+        # validation_generator = dataAugmentation(global_val_path, class_train='validation')
+        # len_validation = len(os.listdir(global_val_path + '/validation/images'))
+        # global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
+        # global_acc = global_val_acc[1]
+        # global_val_accs.append(global_acc)
 
         if patience_wait >= patience:
             break
@@ -626,7 +625,7 @@ def fedAvg_2(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_
 
     file_utils.write_measures(measures_file, train_accs)
     file_utils.write_measures(measures_file, val_accs)
-    file_utils.write_measures(measures_file, global_val_accs)
+    # file_utils.write_measures(measures_file, global_val_accs)
 
     plots.history_fedavg(train_accs, val_accs, len(clients), name)
 
@@ -778,12 +777,12 @@ def fedAvg_original(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1,
         print("patience_wait = " + str(patience_wait))
 
         # Stores global_validation_acc
-        global_val_path = "datasets/dataset_lung" # tocheck
-        validation_generator = dataAugmentation(global_val_path, class_train='validation')
-        len_validation = len(os.listdir(global_val_path + '/validation/images'))
-        global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
-        global_acc = global_val_acc[1]
-        global_val_accs.append(global_acc)
+        # global_val_path = "datasets/dataset_lung" # tocheck
+        # validation_generator = dataAugmentation(global_val_path, class_train='validation')
+        # len_validation = len(os.listdir(global_val_path + '/validation/images'))
+        # global_val_acc = global_model.evaluate_generator(generator=validation_generator, steps=len_validation / 1)
+        # global_acc = global_val_acc[1]
+        # global_val_accs.append(global_acc)
 
         if patience_wait >= patience:
             break
@@ -798,7 +797,7 @@ def fedAvg_original(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1,
 
     file_utils.write_measures(measures_file, train_accs)
     file_utils.write_measures(measures_file, val_accs)
-    file_utils.write_measures(measures_file, global_val_accs)
+    # file_utils.write_measures(measures_file, global_val_accs)
 
     plots.history_fedavg(train_accs, val_accs, len(clients), name)
 
