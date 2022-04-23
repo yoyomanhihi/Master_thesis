@@ -24,12 +24,12 @@ def build_and_save(datasetpath, preloaded, epochs, name):
     utils.simpleSGD(datasetpath=datasetpath, preloaded=preloaded, epochs=epochs, name=name)
 
 
-def build_and_save_fedavg_2(datasetpath, preloaded, nbclients, name):
+def build_and_save_fedeq(datasetpath, preloaded, nbclients, name):
     physical_devices = tf.config.list_physical_devices('GPU')
     # print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    utils.fedAvg_2(datasetpath, preloaded, nbclients, name=name, patience=10)
+    utils.fedEq(datasetpath, preloaded, nbclients, name=name, patience=10)
 
 
 def build_and_save_fedavg_original(datasetpath, preloaded, nbclients, name):
@@ -37,7 +37,7 @@ def build_and_save_fedavg_original(datasetpath, preloaded, nbclients, name):
     # print(physical_devices)
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    utils.fedAvg_original(datasetpath, preloaded, nbclients, name=name, patience=10)
+    utils.fedAvg(datasetpath, preloaded, nbclients, name=name, patience=10)
 
 
 def load_and_segment(model_path):
@@ -83,9 +83,12 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 # load_and_evaluate('datasets/dataset_heart_fedAvg/2', 'ds2_medbig.h5')
 # get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='glo_final_s1.h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
-# print('0: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/0', 'ds0_2.h5')))
-# print('1: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/1', 'ds1_2.h5')))
-# print('2: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/2', 'ds2_2.h5')))
+# print('0: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg0/0', 'ds0_1_bis.h5')))
+# print('1: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg0/1', 'ds0_1_bis.h5')))
+# print('2: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg0/2', 'fedeq_1_bis.h5')))
+# print('0: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg0/0', 'fedeq_1_bis_2.h5')))
+# print('1: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg0/1', 'fedeq_1_bis_2.h5')))
+# print('2: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg0/2', 'fedeq_1_bis_2.h5')))
 # print('3000: ' + str(utils.test_model_3d('datasets/dataset_lung50', 'sm3000.h5')))
 # print('2000: ' + str(utils.test_model_3d('datasets/dataset_lung50', 'sm2000.h5')))
 # print('1: ' + str(utils.test_model_3d('datasets/dataset_lung0', 'lr2e5.h5')))
