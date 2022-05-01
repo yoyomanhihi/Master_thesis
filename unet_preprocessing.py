@@ -230,23 +230,25 @@ def copyNonEmptyOnly(initial_path, new_path):
             # copy the image from the initial dataset to the new dataset
             shutil.copy(src_image, dst_image)
 
-# def copyNonEmptyOnly2(initial_path, new_path):
-#     for file1 in os.listdir(initial_path):
-#         src_file1 = initial_path + '/' + file1
-#         dst_file1 = new_path + '/' + file1
-#         if not os.path.exists(dst_file1):
-#             os.makedirs(dst_file1)
-#         for file2 in os.listdir(src_file1):
-#             src_file = src_file1 + '/' + file2
-#             mask = cv2.imread(src_file, cv2.IMREAD_GRAYSCALE)
-#             if np.max(mask) > 0:
-#                 dst_file = dst_file1 + '/' + file2
-#                 shutil.copy(src_file, dst_file)
 
+def copyNonEmptyOnly2(initial_path, new_path):
+    for file1 in os.listdir(initial_path):
+        src_file1 = initial_path + '/' + file1
+        dst_file1 = new_path + '/' + file1
+        if not os.path.exists(dst_file1):
+            os.makedirs(dst_file1)
+        for file2 in os.listdir(src_file1):
+            src_file = src_file1 + '/' + file2
+            mask = cv2.imread(src_file, cv2.IMREAD_GRAYSCALE)
+            if np.max(mask) > 0:
+                dst_file = dst_file1 + '/' + file2
+                shutil.copy(src_file, dst_file)
 
-# generateAndStore("NSCLC-Radiomics\manifest-1603198545583", "lung", "test", initclient=311, endclient=312, initialcount=30, frac=0.5)
-# generateAndStore("manifest-1638281314414", "lung", "test", initclient=311, endclient=345, initialcount=31, frac=0.5)
-# generateAndStore("manifest-1557326747206", "lung", "test", initclient=53, endclient=60, initialcount=65, frac=0.5)
+# copyNonEmptyOnly2("NSCLC-Radiomics/manifest-1603198545583/masks_esophagus", "NSCLC-Radiomics/manifest-1603198545583/masks_esophagus0")
+
+# generateDatasetFromManyClients("NSCLC-Radiomics\manifest-1603198545583", "esophagus", "validation", initclient=248, endclient=319, initialcount=0, frac=0.5)
+# generateDatasetFromManyClients("manifest-1638281314414", "esophagus", "validation", initclient=243, endclient=312, initialcount=71, frac=0.5)
+# generateDatasetFromManyClients("manifest-1557326747206", "esophagus", "validation", initclient=0, endclient=41, initialcount=140, frac=0.5)
 
 
 # Heart preprocessing:
@@ -262,10 +264,9 @@ def copyNonEmptyOnly(initial_path, new_path):
 
 # copyNonEmptyOnly2("NSCLC-Radiomics/manifest-1603198545583/masks_lung", "NSCLC-Radiomics/manifest-1603198545583/masks_lung0")
 
-# copyNonEmptyOnly('NSCLC-Radiomics/manifest-1603198545583/masks_lung', 'NSCLC-Radiomics/manifest-1603198545583/masks_lung0')
-# copyNonEmptyOnly('datasets/dataset_lung/test', 'datasets/dataset_lung0/test')
-# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/0/validation', 'datasets/dataset_heart_fedAvg/0/validation0')
-# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/1/train', 'datasets/dataset_heart_fedAvg/1/train0')
-# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/1/validation', 'datasets/dataset_heart_fedAvg/1/validation0')
-# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/2/train', 'datasets/dataset_heart_fedAvg/2/train0')
-# copyNonEmptyOnly('datasets/dataset_heart_fedAvg/2/validation', 'datasets/dataset_heart_fedAvg/2/validation0')
+copyNonEmptyOnly('datasets/dataset_esophagus/train', 'datasets/dataset_esophagus0/train')
+copyNonEmptyOnly('datasets/dataset_esophagus/validation', 'datasets/dataset_esophagus0/validation')
+# copyNonEmptyOnly('datasets/dataset_esophagus/train', 'datasets/dataset_heart_fedAvg/1/train0')
+# copyNonEmptyOnly('datasets/dataset_esophagus/validation', 'datasets/dataset_heart_fedAvg/1/validation0')
+# copyNonEmptyOnly('datasets/dataset_esophagus/train', 'datasets/dataset_heart_fedAvg/2/train0')
+# copyNonEmptyOnly('datasets/dataset_esophagus/validation', 'datasets/dataset_heart_fedAvg/2/validation0')

@@ -496,7 +496,7 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     # lr = lr_scheduler.TanhDecayScheduler()
 
     # define the learning rate
-    lr = 2e-5 #tocheck
+    lr = 5e-5 #tocheck
 
     # create the U-net model
     model = get_model()
