@@ -123,7 +123,9 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 # load_and_evaluate('datasets/dataset_heart_fedAvg/2', 'ds2_medbig.h5')
 # get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='glo_final_s1.h5')
 # plots.plot_from_file("ds1_data.txt", name="marchestp")
-# print('0: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/0', 'fedeq_3.h5')))
+# print('3000: ' + str(utils.test_model_3d('datasets/dataset_esophagus', 'sm3000.h5')))
+# print('7500: ' + str(utils.test_model_3d('datasets/dataset_esophagus', 'sm7500.h5')))
+# print('10000: ' + str(utils.test_model_3d('datasets/dataset_esophagus', 'sm10000.h5')))
 # print('1: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/1', 'fedeq_3.h5')))
 # print('2: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/2', 'fedeq_3.h5')))
 # print('0: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/0', 'fedor_3.h5')))
@@ -136,9 +138,9 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 
 
 
-# i = 0
-# plots.mask_3d('datasets/dataset_heart/test/masks', i, "Doctor's heart segmentation on dataset 1")
-# utils.dice_3d('datasets/dataset_heart', 'models/heart_fed_medbigda_27epochs(2).h5', i)
-# plots.prediction_3d('datasets/dataset_heart/test/images', 'models/heart_fed_medbigda_27epochs(2).h5', i, "Model segmentation after the first step")
-# utils.dice_3d('datasets/dataset_heart', 'fed_50.h5', i)
-# plots.prediction_3d('datasets/dataset_heart/test/images', 'fed_50.h5', i, "Model's prediction")
+# for i in range(7):
+    # plots.mask_3d('datasets/dataset_lung/test/masks', i, "Doctor's lungs segmentation on dataset 1")
+    # utils.dice_3d('datasets/dataset_heart', 'models/heart_fed_medbigda_27epochs(2).h5', i)
+    # plots.prediction_3d('datasets/dataset_lung/test/images', 'models/lungs/fedeq_3.h5', i, "Model's prediction")
+    # utils.dice_3d('datasets/dataset_lung', 'models/lungs/fedeq_3.h5', i)
+    # plots.prediction_3d('datasets/dataset_heart/test/images', 'fed_50.h5', i, "Model's prediction")

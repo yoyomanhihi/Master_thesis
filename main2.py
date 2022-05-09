@@ -21,4 +21,4 @@ def main():
 
 # main()
 # unet_running.build_and_save_fedavg_original(datasetpath='datasets/dataset_lung_fedAvg0', preloaded=None, nbclients=3, name=name)
-unet_running.build_and_save(datasetpath='datasets/dataset_esophagus', epochs=100, name=name, preloaded = None)
+unet_running.build_and_save(datasetpath='datasets/dataset_esophagus0', preloaded = "fedeq_1.h5", epochs=100, name=name)
