@@ -252,12 +252,15 @@ def copyNonEmptyOnly2(initial_path, new_path):
 
 
 # Heart preprocessing:
-copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 0, 'train', 0, 248, remove=True)
-copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 0, 'validation', 0, 71, remove=True)
-copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 1, 'train', 248, 491, remove=True)
-copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 1, 'validation', 71, 140, remove=True)
-copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'train', 491, 532, remove=True)
-copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'validation', 140, 152, remove=True)
+# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 0, 'test', 0, 35, remove=False)
+# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 1, 'test', 35, 70, remove=False)
+# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'test', 70, 76, remove=False)
+# copyFromCentralToFederated('datasets/dataset_esophagus', 'datasets/dataset_esophagus_fedAvg', 0, 'test', 0, 35, remove=False)
+# copyFromCentralToFederated('datasets/dataset_esophagus', 'datasets/dataset_esophagus_fedAvg', 1, 'test', 35, 70, remove=False)
+# copyFromCentralToFederated('datasets/dataset_esophagus', 'datasets/dataset_esophagus_fedAvg', 2, 'test', 70, 76, remove=False)
+# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 1, 'validation', 71, 140, remove=True)
+# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'train', 491, 532, remove=True)
+# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'validation', 140, 152, remove=True)
 # copyFromCentralToFederated('datasets/dataset_lung50', 'datasets/dataset_lung_fedAvg50', 0, 'test', 0, 30)
 # copyFromCentralToFederated('datasets/dataset_lung50', 'datasets/dataset_lung_fedAvg50', 1, 'test', 31, 65)
 # copyFromCentralToFederated('datasets/dataset_lung50', 'datasets/dataset_lung_fedAvg50', 2, 'test', 65, 71)

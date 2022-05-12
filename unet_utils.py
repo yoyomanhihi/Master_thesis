@@ -508,6 +508,8 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     # compile the model
     model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_metric, metrics=metrics)
 
+    model.summary()
+
     # create the generators for training and validation
     training_generator = dataAugmentation(datasetpath, class_train='train')
     validation_generator = dataAugmentation(datasetpath, class_train='validation')
@@ -601,7 +603,7 @@ def sum_scaled_weights(scaled_weight_list):
 
 
 
-def fedEq(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 5): # tocheck
+def fedEq(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 10): # tocheck
     """ federated equal-chances algotihm
         Args:
             datasetpath: path to the dataset
@@ -655,7 +657,7 @@ def fedEq(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_rou
     metrics = [dice_coef]
 
     # define the learning rate
-    lr = 2e-5 # tocheck
+    lr = 1e-5 # tocheck
 
     # initialize U-Net global model
     global_model = get_model()
@@ -803,7 +805,7 @@ def fedEq(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_rou
     return global_model
 
 
-def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 5): # tocheck
+def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_round = 100, patience = 10): # tocheck
     """ federated averaging algorithm
         Args:
             datasetpath: path to the dataset
@@ -857,7 +859,7 @@ def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_ro
     metrics = [dice_coef]
 
     # define the learning rate
-    lr = 2e-5 # tocheck
+    lr = 1e-5 # tocheck
 
     # initialize global model
     global_model = get_model()
