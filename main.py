@@ -1,25 +1,9 @@
-import os
 import unet_running
-import mailSender
 import sys
 
-
 name = sys.argv[1]
-print('name: ' + str(name))
 
-def main():
-
-    try:
-        # results = med_prep_2d.generateAndStore('2d_dataset_1.pickle', nbclients=300)
-        results = unet_running.build_and_save_fedeq(datasetpath='datasets/dataset_heart_fedAvg', nbclients=3, name=name)
-        # string = ("accuracy with lr: " + str(results))
-
-        # print(string)
-        mailSender.sendResults(False, None)
-
-    except Exception as e:
-        mailSender.sendResults(True, None)
-
-# main()
-unet_running.build_and_save_fedeq(datasetpath='datasets/dataset_esophagus_fedAvg0', preloaded="lungs.h5", nbclients=3, name=name)
-# unet_running.build_and_save(datasetpath='datasets/dataset_example', preloaded = None, epochs=4, name=name)
+# example call of federated equal-chances.
+# Of course, a dataset organized as described in
+# the report and in unet_utils is needed to work
+unet_running.build_and_save_fedeq('datasets/dataset_fedAvg_example', None, 3, name)

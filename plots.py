@@ -268,27 +268,3 @@ def plot_3d(image, title, threshold=0.5, color="navy"):
 
     plt.title(title, fontsize=25)
     plt.show()
-
-# compare_fedAvg_to_separate_models('data/ds0_heart_20epochs(2).txt',
-#                                   'data/glo_final_0_data.txt',
-#                                   'data/fedor_final_0_3_data.txt',
-#                                   'data/fed2_0_data.txt',
-#                                   0, 3, 'on_verra', 1, 1)
-
-# compare_fedAvg_to_separate_models('data/ds0_medbig_data.txt',
-#                                   'data/glo_final_1_data.txt',
-#                                   'data/fed_or_data.txt',
-#                                   'data/fed_50_data.txt',
-#                                   0, 3, 'on_verra', 5000, 2)
-#
-# compare_fedAvg_to_separate_models('data/ds1_medbig_data.txt',
-#                                   'data/glo_final_1_data.txt',
-#                                   'data/fed_or_data.txt',
-#                                   'data/fed_50_data.txt',
-#                                   1, 3, 'on_verra', 5000, 2)
-#
-# compare_fedAvg_to_separate_models('data/ds2_medbig_data.txt',
-#                                   'data/glo_final_1_data.txt',
-#                                   'data/fed_or_data.txt',
-#                                   'data/fed_50_data.txt',
-#                                   2, 3, 'on_verra', 5000, 2)

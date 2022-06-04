@@ -243,33 +243,3 @@ def copyNonEmptyOnly2(initial_path, new_path):
             if np.max(mask) > 0:
                 dst_file = dst_file1 + '/' + file2
                 shutil.copy(src_file, dst_file)
-
-# copyNonEmptyOnly2("NSCLC-Radiomics/manifest-1603198545583/masks_esophagus", "NSCLC-Radiomics/manifest-1603198545583/masks_esophagus0")
-
-# generateDatasetFromManyClients("NSCLC-Radiomics\manifest-1603198545583", "lung", "test", initclient=281, endclient=313, initialcount=0, frac=0.5)
-# generateDatasetFromManyClients("manifest-1638281314414", "esophagus", "test", initclient=312, endclient=348, initialcount=35, frac=0.5)
-# generateDatasetFromManyClients("manifest-1557326747206", "esophagus", "test", initclient=53, endclient=60, initialcount=70, frac=0.5)
-
-
-# Heart preprocessing:
-# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 0, 'test', 0, 35, remove=False)
-# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 1, 'test', 35, 70, remove=False)
-# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'test', 70, 76, remove=False)
-# copyFromCentralToFederated('datasets/dataset_esophagus', 'datasets/dataset_esophagus_fedAvg', 0, 'test', 0, 35, remove=False)
-# copyFromCentralToFederated('datasets/dataset_esophagus', 'datasets/dataset_esophagus_fedAvg', 1, 'test', 35, 70, remove=False)
-# copyFromCentralToFederated('datasets/dataset_esophagus', 'datasets/dataset_esophagus_fedAvg', 2, 'test', 70, 76, remove=False)
-# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 1, 'validation', 71, 140, remove=True)
-# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'train', 491, 532, remove=True)
-# copyFromCentralToFederated('datasets/dataset_esophagus0', 'datasets/dataset_esophagus_fedAvg0', 2, 'validation', 140, 152, remove=True)
-# copyFromCentralToFederated('datasets/dataset_lung50', 'datasets/dataset_lung_fedAvg50', 0, 'test', 0, 30)
-# copyFromCentralToFederated('datasets/dataset_lung50', 'datasets/dataset_lung_fedAvg50', 1, 'test', 31, 65)
-# copyFromCentralToFederated('datasets/dataset_lung50', 'datasets/dataset_lung_fedAvg50', 2, 'test', 65, 71)
-
-# copyNonEmptyOnly2("NSCLC-Radiomics/manifest-1603198545583/masks_lung", "NSCLC-Radiomics/manifest-1603198545583/masks_lung0")
-
-# copyNonEmptyOnly('datasets/dataset_esophagus/test', 'datasets/dataset_esophagus0/test')
-# copyNonEmptyOnly('datasets/dataset_esophagus/validation', 'datasets/dataset_esophagus0/validation')
-# copyNonEmptyOnly('datasets/dataset_esophagus/train', 'datasets/dataset_heart_fedAvg/1/train0')
-# copyNonEmptyOnly('datasets/dataset_esophagus/validation', 'datasets/dataset_heart_fedAvg/1/validation0')
-# copyNonEmptyOnly('datasets/dataset_esophagus/train', 'datasets/dataset_heart_fedAvg/2/train0')
-# copyNonEmptyOnly('datasets/dataset_esophagus/validation', 'datasets/dataset_heart_fedAvg/2/validation0')

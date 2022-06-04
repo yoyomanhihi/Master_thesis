@@ -1,4 +1,6 @@
-import pickle
+# Federated learning functions inspired by the great tutorial available here:
+# https://towardsdatascience.com/federated-learning-a-step-by-step-implementation-in-tensorflow-aac568283399
+
 import unet_preprocessing
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -117,11 +119,12 @@ def get_model():
     Return:
         model: the model
     """
-    inputs = Input((512, 512, 1))
-    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
-    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv1)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-    drop1 = Dropout(0.5)(pool1)
+    inputs = Input((512, 512, 1)) # size of the images
+
+    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs) # 3x3 convolution
+    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv1)  # 3x3 convolution
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1) # max pooling layer
+    drop1 = Dropout(0.5)(pool1) # dropout layer
 
     conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(drop1)
     conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv2)
@@ -153,13 +156,17 @@ def get_model():
     conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(up8)
     conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv8)
 
-    up9 = concatenate([Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(conv8), conv1], axis=3)
-    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(up9)
-    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv9)
+    up9 = concatenate([Conv2DTranspose(32, (2, 2),
+                                       strides=(2, 2),
+                                       padding='same')
+                       (conv8), conv1], axis=3)         # skip connections
 
-    conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
+    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(up9)   # 3x3 convolution
+    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv9) # 3x3 convolution
 
-    model = Model(inputs=[inputs], outputs=[conv10])
+    conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9) # 1x1 sigmoid activation
+
+    model = Model(inputs=[inputs], outputs=[conv10]) # define the model
 
     return model
 
@@ -514,14 +521,14 @@ def simpleSGD(datasetpath, preloaded, epochs, name):
     training_generator = dataAugmentation(datasetpath, class_train='train')
     validation_generator = dataAugmentation(datasetpath, class_train='validation')
 
-    # store the number of elements in the training and validation sets
+    # store the number of elements in the training Sand validation sets
     len_training = len(os.listdir(datasetpath + '/train/images'))
     len_validation = len(os.listdir(datasetpath + '/validation/images'))
 
     # fit the model
     hist = model.fit(training_generator, validation_data=validation_generator,
                      validation_steps=len_validation/1, steps_per_epoch=len_training/1,
-                     epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1) # tocheck len attention
+                     epochs=epochs, shuffle=True, callbacks=callbacks, verbose=1)       # tocheck len attention
 
     print((hist.history['val_dice_coef']))
 
@@ -629,6 +636,7 @@ def fedEq(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_rou
 
     # create an array of the ratios of the training data of each client
     clients_weight = get_ratio_of_clients(nbrclients, datasetpath)
+    biggest_client = np.argmax(clients_weight)
 
     print("clients_weight: " + str(clients_weight))
 
@@ -714,7 +722,7 @@ def fedEq(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_rou
             # fit the local model on the client data. The number of images used for training is
             # equals to the size of clients_weight[1] as it is the biggest client in this case
             train_acc = local_model.fit(training_generator,
-                                        steps_per_epoch=len_training*(clients_weight[1]/clients_weight[client]),
+                                        steps_per_epoch=len_training*(clients_weight[biggest_client]/clients_weight[client]),
                                         epochs=epo, shuffle=True,
                                         callbacks=callbacks, verbose=1)
 
@@ -1007,132 +1015,3 @@ def fedAvg(datasetpath, preloaded, nbrclients, name, frac = 1, epo = 1, comms_ro
     plots.history_fedavg(train_accs, val_accs, len(clients), name)
 
     return global_model
-
-
-
-
-'''
-def prepareTrainingData(dataset_path):
-    dataset = load(dataset_path)
-    dataset = np.array(dataset)
-    x_train = []
-    y_train = []
-    for elem in dataset:
-        x_train.append(elem[0])
-        y_train.append(elem[1])
-    x_train = np.reshape(x_train, (len(x_train), 512, 512, 1))
-    y_train = np.reshape(y_train, (len(y_train), 512, 512, 1))
-    return x_train, y_train
-
-
-def prepareTrainTest(dataset_path):
-    dataset = load(dataset_path)
-    dataset = np.array(dataset)
-    size = len(dataset)
-    train_size = int(0.8 * size)
-    inputs = []
-    outputs = []
-    for elem in dataset:
-        inputs.append(elem[0])
-        outputs.append(elem[1])
-    x_train = inputs[:train_size]
-    y_train = outputs[:train_size]
-    x_test = inputs[train_size:]
-    y_test = outputs[train_size:]
-    return x_train, y_train, x_test, y_test
-'''
-
-'''
-def createClients(listdatasetspaths):
-     Create dictionary with the clients and their data
-        args:
-            listdatasetspaths: list of paths to the different detasets
-        return:
-            clients: dictionary of the different clients and their data. The entries are of the form client_1, client_2 etc
-            x_test: test set data coming from the multiple clients
-            y_test: test set labels coming from the multiple clients
-    clients = {}
-    x_test = []
-    y_test = []
-    clientnbr = 0
-    for datasetpath in listdatasetspaths:
-        x_train_client, y_train_client, x_test_client, y_test_client = prepareTrainTest(datasetpath)
-        clientname = "client_" + str(clientnbr)
-        data = list(zip(x_train_client, y_train_client))
-        clients[clientname] = data
-        x_test.extend(x_test_client)
-        y_test.extend(y_test_client)
-        clientnbr+=1
-    return clients, x_test, y_test
-    
-    
-def batch_data(data_shard, bs=3):
-    Takes in a clients data shard and create a tfds object off it
-        args:
-            shard: a data, label constituting a client's data shard
-            bs:batch size
-        return:
-            tfds object
-    # seperate shard into data and labels lists
-    data, label = zip(*data_shard)
-    dataset = tf.data.Dataset.from_tensor_slices((list(data), list(label)))
-    return dataset.shuffle(len(label)).batch(bs)
-    
-def weight_scaling_factor(clients_trn_data, client_name, frac):
-    Calculates the proportion of a client’s local training data with the overall training data held by all clients
-        args:
-            clients_trn_data: dictionary of training data by client
-            client_name: name of the client
-    
-    client_names = list(clients_trn_data.keys())
-    # get the batch size
-    bs = list(clients_trn_data[client_name])[0][0].shape[0]
-    # first calculate the total training data points across clients
-    global_count = sum(
-        [tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() for client_name in client_names]) * bs
-    # get the total number of data points held by a client
-    local_count = tf.data.experimental.cardinality(clients_trn_data[client_name]).numpy() * bs
-    return (local_count / global_count) / frac
-    
-# def dice_coef_loss_custom(y_true, y_pred):
-#     y_true_f = K.flatten(y_true)
-#     sum = K.sum(y_true_f)
-#     if sum > 0:
-#         return -dice_coef(y_true, y_pred)
-#     else:
-#         return -no_organ_coef(y_pred, smoother)
-    
-# def load(path):
-#      Load the pickle data. The data already contains the 32x32 (32x32x32 in case of 3d) and a correct binary classification
-#     with open(path, 'rb') as f:
-#         data = pickle.load(f)
-#         return data
-
-# def dice_coef_ponderated(y_true, y_pred):
-#     """ Ponderated Dice's coefficient
-#     Args:
-#         y_true: correct mask of the organ
-#         y_pred: predicted mask of the organ
-#     """
-#     y_true_f = K.flatten(y_true)
-#     y_pred_f = K.flatten(y_pred)
-#     intersection = K.sum(y_true_f * y_pred_f)
-#     return K.sum(y_true) * ((2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth))
-
-# Dice coefficient ponderated by the number of true pixels
-# def dice_coef_loss_ponderated(y_true, y_pred):
-#     return -dice_coef_ponderated(y_true, y_pred)
-    
-# def dice_coef_small_smooth(y_true, y_pred):
-#     y_true_f = K.flatten(y_true)
-#     y_pred_f = K.flatten(y_pred)
-#     intersection = K.sum(y_true_f * y_pred_f)
-#     return (2. * intersection + 1.) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.)
-
-
-# def no_organ_coef(y_pred, smoother):
-#     y_pred_f = K.flatten(y_pred)
-#     error = smoother + K.sum(y_pred_f)
-#     return smoother/error
-    
-'''

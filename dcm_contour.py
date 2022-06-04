@@ -601,25 +601,3 @@ def merge_contours():
             left_cont = cv2.imread(left + file, cv2.IMREAD_GRAYSCALE)
             merge = right_cont + left_cont
             plt.imsave('pics/merge/' + file + '.png', merge, cmap='gray')
-
-
-# def print_shapes(general_path):
-#     patients_folders = os.listdir(general_path)
-#     for folder in patients_folders:
-#         newpath = general_path + "/" + folder
-#         if(os.path.isdir(newpath)):
-#             newpath2 = newpath + "/" + "images"
-#             newfiles2 = os.listdir(newpath2)
-#             print(newfiles2)
-#             newpath3 = newpath2 + "/" + newfiles2[0]
-#             im = cv2.imread(newpath3)
-#             print(im.shape)
-
-
-# create_masks_files_only("manifest-1638281314414/Pediatric-CT-SEG/Pediatric-CT-SEG-376/01-03-2008-NA-CT-22033/544.000000-CT-91663" ,"Lung_R")
-# create_masks_only_forall("manifest-1557326747206/LCTSC", 'Lung_R')
-# create_images_forall("manifest-1557326747206/LCTSC")
-# store_array_forall(general_path)
-# merge_masks_lungs_forall("manifest-1557326747206")
-
-

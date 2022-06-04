@@ -1,18 +1,9 @@
-import plots
 import unet_segmentation as segmentation
 import unet_utils as utils
 import tensorflow as tf
 from tensorflow import keras
 import sys
 
-client_nbr = 417
-img_nbr = 65
-organ = "heart"
-client_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-' + str(client_nbr)
-mask_path = 'NSCLC-Radiomics/manifest-1603198545583/masks_' + str(organ) + "/LUNG1-" + str(client_nbr) + "/mask_" + str(img_nbr) + ".png"
-image_path = 'NSCLC-Radiomics/manifest-1603198545583/images' + "/LUNG1-" + str(client_nbr) + "/image_" + str(img_nbr) + ".png"
-# datasetpath = 'datasets/dataset_heart/'
-# datasetpath_fedAvg = 'datasets/dataset_heart_fedAvg/'
 name = sys.argv[1]
 
 def build_and_save(datasetpath, preloaded, epochs, name):
@@ -115,40 +106,3 @@ def get_individial_dice_3d(datasetpath, model, nbclients=3):
 
     mean_dice = total_dice/nbclients
     print('mean 3d dice: ' + str(mean_dice))
-
-
-# build_and_save(datasetpath='datasets/dataset_example', epochs=3, name=name)
-# build_and_save_fedavg(datasetpath='datasets/dataset_fedAvg_example', nbclients=3, name=name)
-# load_and_segment("models/heart/final/glo_final_1.h5")
-# load_and_evaluate('datasets/dataset_heart_fedAvg/2', 'ds2_medbig.h5')
-# get_individial_dice_3d(datasetpath='datasets/dataset_heart_fedAvg', model='glo_final_s1.h5')
-# plots.plot_from_file("ds1_data.txt", name="marchestp")
-# print('3000: ' + str(utils.test_model_3d('datasets/dataset_esophagus', 'sm3000.h5')))
-# print('7500: ' + str(utils.test_model_3d('datasets/dataset_esophagus', 'sm7500.h5')))
-# print('10000: ' + str(utils.test_model_3d('datasets/dataset_esophagus', 'sm10000.h5')))
-# print('1: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/1', 'fedeq_3.h5')))
-# print('2: ' + str(utils.test_model_3d('datasets/dataset_lung_fedAvg50/2', 'fedeq_3.h5')))
-# print('0: ' + str(utils.test_model_3d('datasets/dataset_esophagus_fedAvg/0', 'ds0_2.h5')))
-# print('1: ' + str(utils.test_model_3d('datasets/dataset_esophagus_fedAvg/1', 'ds1_2.h5')))
-# print('2: ' + str(utils.test_model_3d('datasets/dataset_esophagus_fedAvg/2', 'ds2_2.h5')))
-# print('0: ' + str(utils.test_model_3d('datasets/dataset_esophagus_fedAvg/0', 'sm7500.h5')))
-# print('1: ' + str(utils.test_model_3d('datasets/dataset_esophagus_fedAvg/1', 'sm7500.h5')))
-# print('2: ' + str(utils.test_model_3d('datasets/dataset_esophagus_fedAvg/2', 'sm7500.h5')))
-# print('3000: ' + str(utils.test_model_3d('datasets/dataset_lung50', 'sm3000.h5')))
-# print('2000: ' + str(utils.test_model_3d('datasets/dataset_lung50', 'sm2000.h5')))
-# print('1: ' + str(utils.test_model_3d('datasets/dataset_lung0', 'lr2e5.h5')))
-# print('2: ' + str(utils.test_model_3d('datasets/dataset_lung50', 'lr2e5.h5')))
-
-
-
-# for i in range(7):
-    # plots.mask_3d('datasets/dataset_lung/test/masks', i, "Doctor's lungs segmentation on dataset 1")
-    # utils.dice_3d('datasets/dataset_heart', 'models/heart_fed_medbigda_27epochs(2).h5', i)
-    # plots.prediction_3d('datasets/dataset_lung/test/images', 'models/lungs/fedeq_3.h5', i, "Model's prediction")
-    # utils.dice_3d('datasets/dataset_lung', 'models/lungs/fedeq_3.h5', i)
-    # plots.prediction_3d('datasets/dataset_heart/test/images', 'fed_50.h5', i, "Model's prediction")
-    # plots.mask_3d('datasets/dataset_esophagus/test/masks', i, "Doctor's lungs segmentation on dataset 1")
-    # utils.dice_3d('datasets/dataset_heart', 'models/heart_fed_medbigda_27epochs(2).h5', i)
-    # plots.prediction_3d('datasets/dataset_esophagus/test/images', 'sm7500.h5', i, "Model's prediction")
-    # utils.dice_3d('datasets/dataset_esophagus', 'sm7500.h5', i)
-    # plots.prediction_3d('datasets/dataset_heart/test/images', 'fed_50.h5', i, "Model's prediction")
