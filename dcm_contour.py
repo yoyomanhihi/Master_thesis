@@ -18,37 +18,6 @@ import shutil
 from PIL import Image, ImageDraw
 import imageio
 
-dcm_path = 'manifest-1634338693043/Pancreatic-CT-CBCT-SEG/Pancreas-CT-CB_003/01-15-2012-NA-PANCREAS-79715/2.000000-DI-87802'
-# dcm_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-003/03-21-1995-NA-FDG PET CT Clinical Wh-36710/1.000000-SCOUT-44780'
-# dcm_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046"
-contour_path = 'NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics/LUNG1-001/09-18-2008-StudyID-NA-69331/0.000000-NA-82046/1-1.dcm'
-# contour_path = "manifest-1557326747206/LCTSC/LCTSC-Test-S1-101/03-03-2004-NA-NA-08186/1.000000-NA-56597/1-1.dcm"
-# contour_path = 'manifest-1622561851074/NSCLC Radiogenomics/AMC-001/04-30-1994-NA-PETCT Lung Cancer-74760/1.000000-SCOUT-96085/1-1.dcm'
-general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
-storing_path = "NSCLC-Radiomics/manifest-1603198545583"
-
-# dcm_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1/interobs05/02-18-2019-NA-CT-90318/NA-28629"
-# general_path = "NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1"
-# contour_path = 'NSCLC-Radiomics-Interobserver1/NSCLC-Radiomics-Interobserver1/interobs05/02-18-2019-NA-CT-90318/NA-28629/1-1.dcm'
-# storing_path = "NSCLC-Radiomics-Interobserver1"
-
-
-# contour_data = dicom.read_file(contour_path)
-# print(contour_data)
-# print(dcm_contour.get_roi_names(contour_data))
-#
-# dcm = dicom.dcmread(contour_path)
-#
-# reader = pydicom_seg.SegmentReader()
-# result = reader.read(dcm)
-# print(result.available_segments)
-#
-# for segment_number in result.available_segments:
-#     image_data = result.segment_data(segment_number)  # directly available
-#     plt.imshow(image_data[150,:,:], cmap='gray', interpolation='none')
-#     plt.show()
-
-
 def plot2dcontour(img_arr, contour_arr, img_nbr, figsize=(20, 20)):
     """ Show 2d MR img with contour
     Args:
@@ -231,7 +200,6 @@ def cfile2pixels(file, path, ROIContourSeq=0):
     return img_contour_arrays
 
 
-
 def get_contour_dict(contour_file, path, index):
     """ Return a dictionary as k: img fname, v: [corresponding img_arr, corresponding contour_arr]
     Args:
@@ -271,24 +239,6 @@ def get_contour_dict(contour_file, path, index):
 
     return contour_dict
 
-
-
-# get all image-contour array pairs
-# contour_arrays = cfile2pixels(file="1-1.dcm", path=dcm_path, ROIContourSeq=0)
-
-# get first image - contour array
-# first_image, first_contour, img_id, mask = contour_arrays[4]
-
-# # show an example
-# plt.figure(figsize=(20, 10))
-# plt.subplot(1,2,1)
-# plt.imshow(first_image)
-# plt.subplot(1,2,2)
-# plt.imshow(first_contour)
-#
-# plt.show()
-
-
 def slice_order(path):
     """ Takes path of directory that has the DICOM images and returns
         a ordered list that has ordered filenames
@@ -312,9 +262,6 @@ def slice_order(path):
     ordered_slices = sorted(slice_dict.items(), key=operator.itemgetter(1))
     return ordered_slices
 
-
-# ordered files
-# ordered_slices = slice_order(dcm_path)
 
 def get_data(path, index):
     """ Generate image array and contour array
@@ -360,17 +307,6 @@ def get_data(path, index):
 
     return np.array(images), np.array(contours), np.array(masks)
 
-
-# images, contours = get_data(dcm_path, index=0)
-#
-#
-# for img_arr, contour_arr in zip(images[79:80], contours[79:80]):
-#     plot2dcontour(img_arr, contour_arr)
-#
-# cntr = contours[80]
-# plt.imshow(cntr)
-#
-# plt.show()
 
 def get_index(dcm_path, index_name):
     """ Return the index number corresponding to the index name, in the ROI sequence of the patient

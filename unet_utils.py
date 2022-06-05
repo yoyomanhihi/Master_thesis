@@ -1,5 +1,8 @@
 # Federated learning functions inspired by the great tutorial available here:
 # https://towardsdatascience.com/federated-learning-a-step-by-step-implementation-in-tensorflow-aac568283399
+#
+# U-Net model inspired by another great tutorial that can be found here:
+# https://medium.com/@fabio.sancinetti/u-net-convnet-for-ct-scan-segmentation-6cc0d465eed3
 
 import unet_preprocessing
 import numpy as np
