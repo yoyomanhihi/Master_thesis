@@ -1,7 +1,7 @@
 # Federated learning functions inspired by the great tutorial available here:
 # https://towardsdatascience.com/federated-learning-a-step-by-step-implementation-in-tensorflow-aac568283399
 #
-# U-Net model inspired by another great tutorial that can be found here:
+# U-Net model and Dice's loss outside tensorflow inspired by another great tutorial that can be found here:
 # https://medium.com/@fabio.sancinetti/u-net-convnet-for-ct-scan-segmentation-6cc0d465eed3
 
 import unet_preprocessing
@@ -52,6 +52,7 @@ def get_mean_std(images_path):
 smooth = 1. #tocheck
 
 # Dice Coefficient to work with Tensorflow
+# Found on stack overflow available here: https://github.com/keras-team/keras/issues/3611
 def dice_coef(y_true, y_pred):
     """ Dice's coefficient
     Args:
@@ -63,7 +64,7 @@ def dice_coef(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)
     return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
-
+    
 def dice_coef_loss(y_true, y_pred):
     """ Dice's loss
     Args:
@@ -91,6 +92,7 @@ def get_average_number_of_true_pixels(datasetpath):
     return true_pixels / len(os.listdir(masks_path))
 
 
+# Found on stack overflow, available here: https://stackoverflow.com/questions/49284455/keras-custom-function-implementing-jaccard
 def jaccard_distance(y_true, y_pred):
     """ Jaccard distance
     Args:

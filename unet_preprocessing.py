@@ -11,6 +11,8 @@ import shutil
 general_path = "NSCLC-Radiomics/manifest-1603198545583/NSCLC-Radiomics"
 storing_path = "NSCLC-Radiomics/manifest-1603198545583"
 
+
+# Utility function found on stack overflow: https://stackoverflow.com/questions/4836710/is-there-a-built-in-function-for-string-natural-sort
 def sorted_alphanumeric(data):
     """ Sort the data alphanumerically. allows to have mask_2 before mask_10 for example """
     convert = lambda text: int(text) if text.isdigit() else text.lower()
